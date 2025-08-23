@@ -1,0 +1,44 @@
+
+# Pyrthon
+__pycache__
+*.py[cod]
+*$py.class
+
+.Python
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+*.log
+__pypackages__/
+venv/
+env/
+.venv/
+.env/
+
+
+# BIND specific files
+bind-keys/
+*.key
+*.private
+
+# Test coverage reports
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# Documentation builds
+# IDE and editor files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?

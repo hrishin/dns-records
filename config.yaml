@@ -1,0 +1,8 @@
+dns_providers:
+  mock: {}
+  
+default_provider: mock
+
+logging:
+  level: INFO
+  file: dns_manager.log

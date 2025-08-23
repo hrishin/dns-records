@@ -1,0 +1,63 @@
+# Copy this file to config.yaml and customize with your settings
+
+# DNS Provider Configuration
+dns_providers:
+  # BIND DNS Server Configuration
+  bind:
+    nameserver: 192.168.1.10  # BIND server IP address
+    port: 53                  # DNS port (default: 53)
+    key_file: /etc/bind/rndc.key  # Optional: RNDC key file for authenticated updates
+    key_name: rndc-key        # Optional: Key name for authenticated updates
+    zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Optional: Zone file path
+
+# Default DNS provider to use
+default_provider: bind
+
+# Logging Configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: dns_manager.log
+
+# Safety Settings
+safety:
+  # Maximum number of records that can be deleted in a single operation
+  max_deletes_per_run: 50
+  
+  # Maximum number of records that can be modified in a single operation
+  max_modifications_per_run: 100
+  
+  # Require confirmation for operations affecting more than this many records
+  require_confirmation_threshold: 10
+  
+  # Zones that are protected from any modifications
+  protected_zones:
+    - "critical.bigbank.com"
+    - "production.bigbank.com"
+
+# Backup Settings
+backup:
+  # Automatically backup DNS records before making changes
+  enabled: true
+  
+  # Backup location
+  directory: ./backups
+  
+  # Keep backups for this many days
+  retention_days: 30
+  
+  # Backup format (json, yaml, csv)
+  format: json
+
+# Performance Settings
+performance:
+  # Batch size for API operations
+  batch_size: 10
+  
+  # Delay between API calls (in seconds)
+  api_delay: 0.1
+  
+  # Timeout for API calls (in seconds)
+  timeout: 30
+  
+  # Maximum retries for failed API calls
+  max_retries: 3

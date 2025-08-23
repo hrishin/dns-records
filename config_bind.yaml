@@ -1,0 +1,16 @@
+# BIND DNS Provider Configuration
+# This configuration uses the BIND provider with dig and nsupdate
+
+dns_providers:
+  bind:
+    nameserver: 127.0.0.1  # Local BIND server for testing
+    port: 53               # Standard DNS port
+    key_file: rndc.key  # Uncomment if using authenticated updates
+    key_name: rndc-key             # Uncomment if using authenticated updates
+    # zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Uncomment if using zone files
+
+default_provider: bind
+
+logging:
+  level: INFO
+  file: dns_manager_bind.log
