@@ -28,6 +28,9 @@ bind-keys/
 *.key
 *.private
 
+# Age encryption keys
+.age-key
+
 # Test coverage reports
 htmlcov/
 .coverage

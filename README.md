@@ -97,7 +97,41 @@ netapp1.svm.ib.bigbank.com,192.168.47.11
 - Dry-run mode for preview
 - Comprehensive logging and audit trail
 
-## Quick Start
+## Encrypted Configuration Files
+
+The `bind/update-key.conf` file contains sensitive DNS update keys and is encrypted using SOPS with age encryption for security.
+
+### Prerequisites
+- **SOPS**: Install with `brew install sops`
+- **Age**: Install with `brew install age`
+
+### Working with Encrypted Files
+
+#### Decrypt for editing:
+```bash
+./scripts/decrypt-update-key.sh
+```
+
+#### Re-encrypt after changes:
+```bash
+./scripts/encrypt-update-key.sh
+```
+
+#### Manual operations:
+```bash
+# Decrypt
+SOPS_AGE_KEY_FILE=.age-key sops -d -i bind/update-key.conf
+
+# Encrypt
+SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
+```
+
+### Security Notes
+- The private age key (`.age-key`) is automatically added to `.gitignore`
+- Never commit the private key to version control
+- The public key is stored in `.sops.yaml` for team collaboration
+- All team members can decrypt using their own age keys
+
 
 ### Prerequisites
 - Python 3.8+

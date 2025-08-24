@@ -38,6 +38,10 @@ help:
 	@echo "  clean-all        Clean up everything including BIND"
 	@echo "  clean-logs       Clean log files"
 	@echo ""
+	@echo "Encryption:"
+	@echo "  decrypt-key      Decrypt update-key.conf for editing"
+	@echo "  encrypt-key      Encrypt update-key.conf after changes"
+	@echo ""
 
 install:
 	@echo "Installing dependencies..."
@@ -196,6 +200,15 @@ bind-clean:
 		docker rm bind-dns-server; \
 	fi
 	@echo "BIND DNS server container removed!"
+
+# Encryption Management
+decrypt-key:
+	@echo "Decrypting update-key.conf for editing..."
+	./scripts/decrypt-update-key.sh
+
+encrypt-key:
+	@echo "Encrypting update-key.conf after changes..."
+	./scripts/encrypt-update-key.sh
 
 # Default help
 .DEFAULT_GOAL := help
