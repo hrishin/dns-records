@@ -26,13 +26,17 @@ jobs:
       - name: Install sops and age
         run: |
           # Install sops
-          curl -L https://github.com/mozilla/sops/releases/latest/download/sops-v3.7.3.linux.amd64 -o sops
+          echo "Installing sops..."
+          curl -L -o sops "https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64"
           chmod +x sops
           sudo mv sops /usr/local/bin/
           
           # Install age
-          curl -L https://github.com/FiloSottile/age/releases/latest/download/age-v1.1.1-linux-amd64.tar.gz | tar -xz
-          sudo mv age /usr/local/bin/
+          echo "Installing age..."
+          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz"
+          tar -xzf age.tar.gz
+          sudo mv age/age /usr/local/bin/
+          rm -rf age age.tar.gz
           
           echo "Installed versions:"
           sops --version
