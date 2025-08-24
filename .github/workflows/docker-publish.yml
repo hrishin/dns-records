@@ -10,7 +10,7 @@ on:
     # No inputs needed - just manual trigger
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: hriships/${{ github.repository }}
 
 jobs:
   build:
