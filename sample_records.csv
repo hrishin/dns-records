@@ -1,7 +1,8 @@
 FQDN,IPv4
+ns1.ib.bigbank.com,192.168.1.100
 machine1.mgmt.ib.bigbank.com,172.16.1.50
 machine1.ipmi.ib.bigbank.com,172.16.20.50
-machine1.ib.bigbank.com,10.33.0.50
+db.ib.bigbank.com,10.33.0.50
 netapp1.svm.ib.bigbank.com,192.168.47.11
 machine2.mgmt.ib.bigbank.com,172.16.1.51
 machine2.ipmi.ib.bigbank.com,172.16.20.51
@@ -12,3 +13,4 @@ db1.ib.bigbank.com,10.33.2.10
 db2.ib.bigbank.com,10.33.2.11
 monitoring.ib.bigbank.com,10.33.3.10
 logging.ib.bigbank.com,10.33.3.11
+api.ib.bigbank.com,10.33.3.12

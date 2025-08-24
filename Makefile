@@ -153,7 +153,7 @@ bind-status:
 		podman ps | grep bind-dns-server; \
 		echo ""; \
 		echo "Testing DNS resolution:"; \
-		dig @127.0.0.1 machine1.ib.bigbank.com +short || echo "DNS resolution failed"; \
+		dig @127.0.0.1 db.ib.bigbank.com +short || echo "DNS resolution failed"; \
 	else \
 		echo "BIND DNS server is not running."; \
 	fi
@@ -169,14 +169,9 @@ bind-logs:
 bind-test:
 	@echo "Testing BIND DNS resolution..."
 	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		echo "Testing machine1.ib.bigbank.com:"; \
-		dig @127.0.0.1 machine1.ib.bigbank.com; \
+		echo "Testing db.ib.bigbank.com:"; \
+		dig @127.0.0.1 db.ib.bigbank.com; \
 		echo ""; \
-		echo "Testing web1.ib.bigbank.com:"; \
-		dig @127.0.0.1 web1.ib.bigbank.com; \
-		echo ""; \
-		echo "Testing db1.ib.bigbank.com:"; \
-		dig @127.0.0.1 db1.ib.bigbank.com; \
 	else \
 		echo "BIND DNS server is not running. Start it with 'make bind-start'"; \
 	fi

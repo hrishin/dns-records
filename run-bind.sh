@@ -1,21 +1,22 @@
 #!/bin/bash
 
-echo "Building BIND DNS container with Podman..."
-podman build -f Dockerfile.bind -t bind-dns-server .
+set -e
+
+echo "Building BIND DNS container with docker..."
+docker build -f Dockerfile.bind -t bind-dns-server .
 
 echo "Creating BIND DNS container..."
-podman run -d \
+docker run -d \
     --name bind-dns-server \
-    --publish 53:53/udp \
-    --publish 53:53/tcp \
-    --publish 953:953/tcp \
-    --volume ./zones:/etc/bind/zones:ro \
-    --volume ./rndc.key:/etc/bind/rndc.key:ro \
+    -p 53:53/udp \
+    -p 53:53/tcp \
+    -p 953:953/tcp \
+    -v ./bind/zones:/etc/bind/zones:ro \
     --restart unless-stopped \
     bind-dns-server
 
 echo "Container started! Checking status..."
-podman ps | grep bind-dns-server
+docker ps | grep bind-dns-server
 
 echo ""
 echo "Container details:"
@@ -26,10 +27,10 @@ echo "RNDC port: 953 (TCP)"
 echo "Zone files: ./zones/"
 echo "RNDC key: ./rndc.key"
 echo ""
-echo "To view logs: podman logs bind-dns-server"
-echo "To stop: podman stop bind-dns-server"
-echo "To remove: podman rm bind-dns-server"
+echo "To view logs: docker logs bind-dns-server"
+echo "To stop: docker stop bind-dns-server"
+echo "To remove: docker rm bind-dns-server"
 echo ""
 echo "Testing DNS resolution..."
-echo "Querying machine1.ib.bigbank.com:"
-dig @127.0.0.1 machine1.ib.bigbank.com
+echo "Querying db.ib.bigbank.com:"
+dig @127.0.0.1 db.ib.bigbank.com

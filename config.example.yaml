@@ -6,8 +6,8 @@ dns_providers:
   bind:
     nameserver: 192.168.1.10  # BIND server IP address
     port: 53                  # DNS port (default: 53)
-    key_file: /etc/bind/rndc.key  # Optional: RNDC key file for authenticated updates
-    key_name: rndc-key        # Optional: Key name for authenticated updates
+    # key_file: /etc/bind/rndc.key  # Optional: RNDC key file for authenticated updates
+    # key_name: rndc-key        # Optional: Key name for authenticated updates
     zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Optional: Zone file path
 
 # Default DNS provider to use

@@ -19,13 +19,13 @@ class RecordManager:
         self.dns_client = dns_client
 
     def analyze_changes(
-        self, current_records: List[Dict], desired_records: List[Dict], zone: str
+        self, current_records, desired_records: List[Dict], zone: str
     ) -> Dict:
         """
         Analyze changes between current and desired DNS records.
 
         Args:
-            current_records: List of current DNS records
+            current_records: Current DNS records (can be List[Dict] or Dict[str, str])
             desired_records: List of desired DNS records from CSV
             zone: DNS zone name for safety validation
 
@@ -33,6 +33,14 @@ class RecordManager:
             Dictionary containing categorized changes
         """
         logger.info("Analyzing DNS record changes...")
+
+        # Convert current_records to standard format if it's a dictionary
+        if isinstance(current_records, dict):
+            current_records = self._dict_to_records_list(current_records)
+        elif not isinstance(current_records, list):
+            raise ValueError(
+                "current_records must be either a list of dictionaries or a dictionary"
+            )
 
         # Create sets for efficient comparison
         current_set = self._records_to_set(current_records)
@@ -106,27 +114,46 @@ class RecordManager:
 
         return changes
 
+    def _dict_to_records_list(self, records_dict: Dict[str, str]) -> List[Dict]:
+        """Convert dictionary of {fqdn: ip} to list of {fqdn: str, ipv4: str} records."""
+        records_list = []
+        for fqdn, ip in records_dict.items():
+            records_list.append({"fqdn": fqdn, "ipv4": ip})
+        return records_list
+
+    def _normalize_fqdn(self, fqdn: str) -> str:
+        """Normalize FQDN by removing trailing dot for consistent comparison."""
+        return fqdn.rstrip('.') if fqdn else fqdn
+
     def _records_to_set(self, records: List[Dict]) -> Set[tuple]:
         """Convert list of records to set of (fqdn, ipv4) tuples for efficient comparison."""
-        return {(record["fqdn"], record["ipv4"]) for record in records}
+        return {(self._normalize_fqdn(record["fqdn"]), record["ipv4"]) for record in records}
 
-    def _find_existing_record(self, current_records: List[Dict], fqdn: str) -> Dict:
+    def _find_existing_record(self, current_records, fqdn: str) -> Dict:
         """Find an existing record by FQDN."""
+        # Ensure current_records is in list format
+        if isinstance(current_records, dict):
+            current_records = self._dict_to_records_list(current_records)
+
+        normalized_fqdn = self._normalize_fqdn(fqdn)
         for record in current_records:
-            if record["fqdn"] == fqdn:
+            if self._normalize_fqdn(record["fqdn"]) == normalized_fqdn:
                 return record
         return None
 
     def _fqdn_in_desired(self, fqdn: str, desired_records: List[Dict]) -> bool:
         """Check if an FQDN exists in desired records."""
-        return any(record["fqdn"] == fqdn for record in desired_records)
+        normalized_fqdn = self._normalize_fqdn(fqdn)
+        return any(self._normalize_fqdn(record["fqdn"]) == normalized_fqdn for record in desired_records)
 
     def _is_in_zone(self, fqdn: str, zone: str) -> bool:
         """Check if an FQDN is within the specified zone."""
-        return fqdn.endswith(zone) or fqdn == zone
+        normalized_fqdn = self._normalize_fqdn(fqdn)
+        normalized_zone = self._normalize_fqdn(zone)
+        return normalized_fqdn.endswith(normalized_zone) or normalized_fqdn == normalized_zone
 
     def _validate_zone_safety(
-        self, current_records: List[Dict], desired_records: List[Dict], zone: str
+        self, current_records, desired_records: List[Dict], zone: str
     ):
         """Validate that operations are safe for the specified zone."""
         logger.info(f"Validating zone safety for zone: {zone}")
@@ -169,10 +196,13 @@ class RecordManager:
             for record in current_records:
                 if self._is_in_zone(record["fqdn"], zone):
                     # Extract subdomain
-                    if record["fqdn"] == zone:
+                    normalized_record_fqdn = self._normalize_fqdn(record["fqdn"])
+                    normalized_zone = self._normalize_fqdn(zone)
+                    
+                    if normalized_record_fqdn == normalized_zone:
                         subdomain = "root"
                     else:
-                        subdomain = record["fqdn"].replace(f".{zone}", "")
+                        subdomain = normalized_record_fqdn.replace(f".{normalized_zone}", "")
 
                     if subdomain not in subdomain_groups:
                         subdomain_groups[subdomain] = []
@@ -195,7 +225,7 @@ class RecordManager:
             logger.error(f"Failed to get zone summary: {e}")
             raise
 
-    def _get_last_updated(self, records: List[Dict]) -> str:
+    def _get_last_updated(self, records) -> str:
         """Get the last updated timestamp from records (if available)."""
         # This is a placeholder - actual implementation would depend on
         # the DNS provider's ability to provide timestamps
@@ -219,7 +249,8 @@ class RecordManager:
                 continue
 
             # Check for duplicate FQDNs
-            fqdn_count = sum(1 for r in csv_records if r["fqdn"] == record["fqdn"])
+            normalized_fqdn = self._normalize_fqdn(record["fqdn"])
+            fqdn_count = sum(1 for r in csv_records if self._normalize_fqdn(r["fqdn"]) == normalized_fqdn)
             if fqdn_count > 1:
                 errors.append(
                     f"Row {i}: Duplicate FQDN '{record['fqdn']}' found {fqdn_count} times"

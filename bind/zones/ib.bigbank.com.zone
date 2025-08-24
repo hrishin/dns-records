@@ -1,0 +1,15 @@
+$ORIGIN .
+$TTL 86400	; 1 day
+ib.bigbank.com		IN SOA	ns1.ib.bigbank.com. admin.ib.bigbank.com. (
+				2023120105 ; serial
+				3600       ; refresh (1 hour)
+				1800       ; retry (30 minutes)
+				1209600    ; expire (2 weeks)
+				86400      ; minimum (1 day)
+				)
+			NS	ns1.ib.bigbank.com.
+
+$ORIGIN ib.bigbank.com.
+api			A	192.168.1.104
+db			A	192.168.1.105
+ns1			A	192.168.1.100

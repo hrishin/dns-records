@@ -5,24 +5,25 @@ RUN apt-get update && apt-get install -y \
     bind9 \
     bind9utils \
     dnsutils \
-    vim \
     && rm -rf /var/lib/apt/lists/*
 
 # Create necessary directories
-RUN mkdir -p /etc/bind/zones /var/cache/bind /var/log/bind
+RUN mkdir -p /var/cache/bind /var/lib/bind /var/log/named /etc/bind/keys
 
 # Copy configuration files
-COPY named.conf.local /etc/bind/
-COPY named.conf.options /etc/bind/
-COPY zones/ib.bigbank.com.zone /etc/bind/zones/
-COPY rndc.key /etc/bind/
+COPY bind/named.conf /etc/bind/named.conf
+COPY bind/zones/ib.bigbank.com.zone /var/lib/bind/ib.bigbank.com.zone
 
-# Set proper permissions
-RUN chown -R bind:bind /etc/bind /var/cache/bind /var/log/bind
-RUN chmod 640 /etc/bind/rndc.key
-RUN chmod 644 /etc/bind/zones/ib.bigbank.com.zone
+# Copy authentication keys (only the update-key.conf, not private keys)
+COPY bind/update-key.conf /etc/bind/keys/
 
-# Expose DNS port
+# Set proper permissions - make zone directory writable for dynamic updates
+RUN chown -R bind:bind /var/cache/bind /var/lib/bind /var/log/named /etc/bind/keys && \
+    chmod 755 /var/lib/bind && \
+    chmod 644 /var/lib/bind/ib.bigbank.com.zone && \
+    chmod 600 /etc/bind/keys/*
+
+# Expose DNS ports
 EXPOSE 53/udp 53/tcp
 
 # Start BIND

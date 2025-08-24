@@ -69,7 +69,7 @@ The system accepts a simple CSV file with the exact structure specified in the r
 FQDN,IPv4
 machine1.mgmt.ib.bigbank.com,172.16.1.50
 machine1.ipmi.ib.bigbank.com,172.16.20.50
-machine1.ib.bigbank.com,10.33.0.50
+db.ib.bigbank.com,10.33.0.50
 netapp1.svm.ib.bigbank.com,192.168.47.11
 ```
 

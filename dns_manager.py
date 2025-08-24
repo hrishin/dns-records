@@ -320,7 +320,6 @@ def main(csv_path: str, zone: str, config_path: str, dry_run: bool, provider: st
         # Initialize DNS manager
         dns_manager = DNSManager(config_path)
 
-
         # Override provider if specified
         if provider:
             dns_manager.config["default_provider"] = provider

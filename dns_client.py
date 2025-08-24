@@ -6,18 +6,14 @@ currently supporting AWS Route53, Cloudflare, and BIND.
 """
 
 import logging
-import tempfile
-import os
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
+from uu import Error
 
-import boto3
-import requests
 from botocore.exceptions import ClientError, NoCredentialsError
 import dns.resolver
 import dns.query
 import dns.update
-import dns.tsig
 import dns.tsigkeyring
 import dns.zone
 import dns.name
@@ -62,31 +58,31 @@ class BINDProvider(DNSProvider):
         self.key_file = config.get("key_file")
         self.key_name = config.get("key_name")
         self.zone_file = config.get("zone_file")
-        
+
         # Initialize DNS resolver
         self.resolver = dns.resolver.Resolver()
         self.resolver.nameservers = [self.nameserver]
         self.resolver.port = self.port
-        
+
         # Initialize TSIG keyring if key file is provided
         self.keyring = None
         if self.key_file and self.key_name:
             try:
                 # Load TSIG key from file
-                with open(self.key_file, 'r') as f:
+                with open(self.key_file, "r") as f:
                     key_content = f.read().strip()
-                
+
                 # Parse BIND key file format to extract the secret
                 secret = self._parse_bind_key_file(key_content, self.key_name)
-                
+
                 if secret:
                     # Create keyring with the key name and secret
-                    self.keyring = dns.tsigkeyring.from_text({
-                        self.key_name: secret
-                    })
+                    self.keyring = dns.tsigkeyring.from_text({self.key_name: secret})
                     logger.info(f"TSIG key loaded from {self.key_file}")
                 else:
-                    logger.warning(f"Could not extract secret for key '{self.key_name}' from {self.key_file}")
+                    logger.warning(
+                        f"Could not extract secret for key '{self.key_name}' from {self.key_file}"
+                    )
             except Exception as e:
                 logger.warning(f"Failed to load TSIG key: {e}")
                 logger.debug("TSIG authentication will not be available")
@@ -99,14 +95,14 @@ class BINDProvider(DNSProvider):
         """Parse BIND key file format to extract the secret for a specific key."""
         try:
             import re
-            
+
             # Look for the key block that matches the key_name
             key_pattern = rf'key\s+"{re.escape(key_name)}"\s*{{(.*?)}}'
             match = re.search(key_pattern, key_content, re.DOTALL)
-            
+
             if match:
                 key_block = match.group(1)
-                
+
                 # Extract the secret from the key block
                 secret_match = re.search(r'secret\s+"([^"]+)"', key_block)
                 if secret_match:
@@ -119,7 +115,7 @@ class BINDProvider(DNSProvider):
             else:
                 logger.warning(f"Key '{key_name}' not found in key file")
                 return None
-                
+
         except Exception as e:
             logger.error(f"Error parsing BIND key file: {e}")
             return None
@@ -142,11 +138,17 @@ class BINDProvider(DNSProvider):
     def _zone_transfer(self, zone: str) -> Optional[dns.zone.Zone]:
         """Attempt zone transfer using dnspython."""
         try:
-            zone_obj = dns.zone.from_xfr(dns.query.xfr(self.nameserver, zone, port=self.port))
+            zone_obj = dns.zone.from_xfr(
+                dns.query.xfr(self.nameserver, zone, port=self.port)
+            )
             return zone_obj
         except Exception as e:
             logger.debug(f"Zone transfer not available for {zone}: {e}")
             return None
+
+    def _normalize_fqdn(self, fqdn: str) -> str:
+        """Normalize FQDN by removing trailing dot for consistent handling."""
+        return fqdn.rstrip('.') if fqdn else fqdn
 
     def get_records(self, zone: str) -> List[Dict]:
         """Get all DNS records for a zone using dnspython."""
@@ -157,32 +159,37 @@ class BINDProvider(DNSProvider):
             try:
                 zone_a_records = self._query_dns(zone, "A")
                 for ip in zone_a_records:
-                    records.append({
-                        "fqdn": zone,
-                        "ipv4": ip,
-                        "type": "A",
-                        "ttl": 300
-                    })
+                    normalized_zone = self._normalize_fqdn(zone)
+                    records.append({"fqdn": normalized_zone, "ipv4": ip, "type": "A", "ttl": 300})
             except Exception as e:
                 logger.debug(f"No A records found for zone {zone}: {e}")
 
             # Get records for common subdomains
             common_subdomains = [
-                "mgmt", "ipmi", "svm", "admin", "monitoring",
-                "web", "db", "logging"
+                "mgmt",
+                "ipmi",
+                "svm",
+                "admin",
+                "monitoring",
+                "web",
+                "db",
+                "logging",
             ]
-            
+
             for subdomain in common_subdomains:
                 subdomain_fqdn = f"{subdomain}.{zone}"
                 try:
                     subdomain_records = self._query_dns(subdomain_fqdn, "A")
                     for ip in subdomain_records:
-                        records.append({
-                            "fqdn": subdomain_fqdn,
-                            "ipv4": ip,
-                            "type": "A",
-                            "ttl": 300
-                        })
+                        normalized_subdomain_fqdn = self._normalize_fqdn(subdomain_fqdn)
+                        records.append(
+                            {
+                                "fqdn": normalized_subdomain_fqdn,
+                                "ipv4": ip,
+                                "type": "A",
+                                "ttl": 300,
+                            }
+                        )
                 except Exception as e:
                     # Subdomain might not exist, continue
                     logger.debug(f"Subdomain {subdomain_fqdn} not found: {e}")
@@ -196,13 +203,16 @@ class BINDProvider(DNSProvider):
                         for rdataset in node.rdatasets:
                             if rdataset.rdtype == dns.rdatatype.A:
                                 fqdn = str(name.derelativize(zone_obj.origin))
+                                normalized_fqdn = self._normalize_fqdn(fqdn)
                                 for rdata in rdataset:
-                                    records.append({
-                                        "fqdn": fqdn,
-                                        "ipv4": str(rdata),
-                                        "type": "A",
-                                        "ttl": rdataset.ttl
-                                    })
+                                    records.append(
+                                        {
+                                            "fqdn": normalized_fqdn,
+                                            "ipv4": str(rdata),
+                                            "type": "A",
+                                            "ttl": rdataset.ttl,
+                                        }
+                                    )
             except Exception as e:
                 logger.debug(f"Zone transfer not available for {zone}: {e}")
 
@@ -222,46 +232,45 @@ class BINDProvider(DNSProvider):
             logger.error(f"Failed to get records from BIND: {e}")
             raise
 
-    def _create_update_message(self, zone: str, record: Dict, action: str) -> dns.update.Update:
+    def _create_update_message(
+        self, zone: str, record: Dict, action: str
+    ) -> dns.update.Update:
         """Create a DNS update message."""
         update = dns.update.Update(zone, keyring=self.keyring)
-        
-        fqdn = dns.name.from_text(record['fqdn'])
-        ttl = record.get('ttl', 300)
-        
+
+        fqdn = dns.name.from_text(record["fqdn"])
+        ttl = record.get("ttl", 300)
+
         if action == "add":
-            update.add(fqdn, ttl, dns.rdatatype.A, record['ipv4'])
+            update.add(fqdn, ttl, dns.rdatatype.A, record["ipv4"])
         elif action == "delete":
             update.delete(fqdn, dns.rdatatype.A)
         elif action == "replace":
-            update.replace(fqdn, ttl, dns.rdatatype.A, record['ipv4'])
-            
+            update.replace(fqdn, ttl, dns.rdatatype.A, record["ipv4"])
+
         return update
 
     def create_record(self, zone: str, record: Dict) -> bool:
         """Create a new DNS record using dnspython."""
         try:
-            # Try RNDC first if available and zone file is specified
-            if self.zone_file and self._check_rndc_availability():
-                try:
-                    return self._create_record_with_rndc(zone, record)
-                except Exception as e:
-                    logger.warning(f"RNDC method failed, falling back to DNS update: {e}")
-            
+
             # Use DNS UPDATE protocol
             update = self._create_update_message(zone, record, "add")
-            
+
             try:
-                response = dns.query.tcp(update, self.nameserver, port=self.port, timeout=30)
+                response = dns.query.tcp(
+                    update, self.nameserver, port=self.port, timeout=30
+                )
                 if response.rcode() == dns.rcode.NOERROR:
                     logger.info(f"Created record {record['fqdn']} -> {record['ipv4']}")
-                    return True
                 else:
-                    logger.error(f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}")
-                    return False
+                    logger.error(
+                        f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
+                    )
+                    raise Error(f"Failed to create the record:  {response.answer}")
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
-                raise
+                raise e
 
         except Exception as e:
             logger.error(f"Failed to create record {record['fqdn']}: {e}")
@@ -275,25 +284,31 @@ class BINDProvider(DNSProvider):
                 try:
                     return self._update_record_with_rndc(zone, record)
                 except Exception as e:
-                    logger.warning(f"RNDC method failed, falling back to DNS update: {e}")
-            
+                    logger.warning(
+                        f"RNDC method failed, falling back to DNS update: {e}"
+                    )
+
             # Use DNS UPDATE protocol - delete old, add new
             update = dns.update.Update(zone, keyring=self.keyring)
-            fqdn = dns.name.from_text(record['fqdn'])
-            ttl = record.get('ttl', 300)
-            
+            fqdn = dns.name.from_text(record["fqdn"])
+            ttl = record.get("ttl", 300)
+
             # Delete existing record
             update.delete(fqdn, dns.rdatatype.A)
             # Add new record
-            update.add(fqdn, ttl, dns.rdatatype.A, record['ipv4'])
-            
+            update.add(fqdn, ttl, dns.rdatatype.A, record["ipv4"])
+
             try:
-                response = dns.query.tcp(update, self.nameserver, port=self.port, timeout=30)
+                response = dns.query.tcp(
+                    update, self.nameserver, port=self.port, timeout=30
+                )
                 if response.rcode() == dns.rcode.NOERROR:
                     logger.info(f"Updated record {record['fqdn']} -> {record['ipv4']}")
                     return True
                 else:
-                    logger.error(f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}")
+                    logger.error(
+                        f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
+                    )
                     return False
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
@@ -311,18 +326,24 @@ class BINDProvider(DNSProvider):
                 try:
                     return self._delete_record_with_rndc(zone, record)
                 except Exception as e:
-                    logger.warning(f"RNDC method failed, falling back to DNS update: {e}")
-            
+                    logger.warning(
+                        f"RNDC method failed, falling back to DNS update: {e}"
+                    )
+
             # Use DNS UPDATE protocol
             update = self._create_update_message(zone, record, "delete")
-            
+
             try:
-                response = dns.query.tcp(update, self.nameserver, port=self.port, timeout=30)
+                response = dns.query.tcp(
+                    update, self.nameserver, port=self.port, timeout=30
+                )
                 if response.rcode() == dns.rcode.NOERROR:
                     logger.info(f"Deleted record {record['fqdn']}")
                     return True
                 else:
-                    logger.error(f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}")
+                    logger.error(
+                        f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
+                    )
                     return False
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
@@ -336,14 +357,16 @@ class BINDProvider(DNSProvider):
         """Check if RNDC is available as an alternative to DNS UPDATE."""
         try:
             import subprocess
+
             result = subprocess.run(
-                ["rndc", "-h"], 
-                capture_output=True, 
-                text=True, 
-                timeout=10
+                ["rndc", "-h"], capture_output=True, text=True, timeout=10
             )
             return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
+        except (
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+            subprocess.CalledProcessError,
+        ):
             logger.debug("RNDC not available, will use DNS UPDATE only")
             return False
 
@@ -351,20 +374,17 @@ class BINDProvider(DNSProvider):
         """Run RNDC command for zone management."""
         try:
             import subprocess
+
             cmd = ["rndc", "-s", self.nameserver, "-p", "953", command]
             if self.key_file:
                 cmd.extend(["-k", self.key_file])
-            
+
             result = subprocess.run(
-                cmd, 
-                capture_output=True, 
-                text=True, 
-                check=True,
-                timeout=30
+                cmd, capture_output=True, text=True, check=True, timeout=30
             )
             logger.debug(f"RNDC output: {result.stdout}")
             return True
-            
+
         except subprocess.TimeoutExpired:
             logger.error("RNDC command timed out after 30 seconds")
             raise RuntimeError("RNDC command timed out")
@@ -379,29 +399,31 @@ class BINDProvider(DNSProvider):
         try:
             if not self.zone_file:
                 raise ValueError("Zone file path required for RNDC method")
-            
+
             # Read current zone file
-            with open(self.zone_file, 'r') as f:
+            with open(self.zone_file, "r") as f:
                 content = f.read()
-            
+
             # Add new record
             new_record = f"{record['fqdn']}.\t{record.get('ttl', 300)}\tIN\tA\t{record['ipv4']}\n"
             content += new_record
-            
+
             # Increment serial number (required for zone reload)
             content = self._increment_serial(content)
-            
+
             # Write back to zone file
-            with open(self.zone_file, 'w') as f:
+            with open(self.zone_file, "w") as f:
                 f.write(content)
-            
+
             # Reload zone with RNDC
             success = self._run_rndc_command(f"reload {zone}")
             if success:
-                logger.info(f"Created record {record['fqdn']} -> {record['ipv4']} using RNDC")
-            
+                logger.info(
+                    f"Created record {record['fqdn']} -> {record['ipv4']} using RNDC"
+                )
+
             return success
-            
+
         except Exception as e:
             logger.error(f"RNDC record creation failed: {e}")
             raise
@@ -409,17 +431,17 @@ class BINDProvider(DNSProvider):
     def _increment_serial(self, content: str) -> str:
         """Increment the serial number in zone file content."""
         import re
-        
+
         # Find SOA record and increment serial
-        soa_pattern = r'(\s+)(\d{10})(\s+; serial)'
+        soa_pattern = r"(\s+)(\d{10})(\s+; serial)"
         match = re.search(soa_pattern, content)
-        
+
         if match:
             current_serial = int(match.group(2))
             new_serial = current_serial + 1
-            content = re.sub(soa_pattern, f'\\g<1>{new_serial}\\g<3>', content)
+            content = re.sub(soa_pattern, f"\\g<1>{new_serial}\\g<3>", content)
             logger.debug(f"Incremented serial from {current_serial} to {new_serial}")
-        
+
         return content
 
     def _update_record_with_rndc(self, zone: str, record: Dict) -> bool:
@@ -427,47 +449,49 @@ class BINDProvider(DNSProvider):
         try:
             if not self.zone_file:
                 raise ValueError("Zone file path required for RNDC method")
-            
+
             # Read current zone file
-            with open(self.zone_file, 'r') as f:
+            with open(self.zone_file, "r") as f:
                 content = f.read()
-            
+
             # Remove old record and add new one
-            lines = content.split('\n')
+            lines = content.split("\n")
             new_lines = []
             record_updated = False
-            
+
             for line in lines:
-                if line.strip().startswith(record['fqdn']) and 'A' in line:
+                if line.strip().startswith(record["fqdn"]) and "A" in line:
                     # Replace the old record
                     new_record = f"{record['fqdn']}.\t{record.get('ttl', 300)}\tIN\tA\t{record['ipv4']}"
                     new_lines.append(new_record)
                     record_updated = True
                 else:
                     new_lines.append(line)
-            
+
             if not record_updated:
                 # Record not found, add it
                 new_record = f"{record['fqdn']}.\t{record.get('ttl', 300)}\tIN\tA\t{record['ipv4']}"
                 new_lines.append(new_record)
-            
+
             # Reconstruct content
-            content = '\n'.join(new_lines)
-            
+            content = "\n".join(new_lines)
+
             # Increment serial number
             content = self._increment_serial(content)
-            
+
             # Write back to zone file
-            with open(self.zone_file, 'w') as f:
+            with open(self.zone_file, "w") as f:
                 f.write(content)
-            
+
             # Reload zone with RNDC
             success = self._run_rndc_command(f"reload {zone}")
             if success:
-                logger.info(f"Updated record {record['fqdn']} -> {record['ipv4']} using RNDC")
-            
+                logger.info(
+                    f"Updated record {record['fqdn']} -> {record['ipv4']} using RNDC"
+                )
+
             return success
-            
+
         except Exception as e:
             logger.error(f"RNDC record update failed: {e}")
             raise
@@ -477,43 +501,43 @@ class BINDProvider(DNSProvider):
         try:
             if not self.zone_file:
                 raise ValueError("Zone file path required for RNDC method")
-            
+
             # Read current zone file
-            with open(self.zone_file, 'r') as f:
+            with open(self.zone_file, "r") as f:
                 content = f.read()
-            
+
             # Remove the record
-            lines = content.split('\n')
+            lines = content.split("\n")
             new_lines = []
             record_found = False
-            
+
             for line in lines:
-                if line.strip().startswith(record['fqdn']) and 'A' in line:
+                if line.strip().startswith(record["fqdn"]) and "A" in line:
                     # Skip this line (delete the record)
                     record_found = True
                 else:
                     new_lines.append(line)
-            
+
             if not record_found:
                 logger.warning(f"Record {record['fqdn']} not found for deletion")
-            
+
             # Reconstruct content
-            content = '\n'.join(new_lines)
-            
+            content = "\n".join(new_lines)
+
             # Increment serial number
             content = self._increment_serial(content)
-            
+
             # Write back to zone file
-            with open(self.zone_file, 'w') as f:
+            with open(self.zone_file, "w") as f:
                 f.write(content)
-            
+
             # Reload zone with RNDC
             success = self._run_rndc_command(f"reload {zone}")
             if success:
                 logger.info(f"Deleted record {record['fqdn']} using RNDC")
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"RNDC record deletion failed: {e}")
             raise
@@ -523,23 +547,32 @@ class BINDProvider(DNSProvider):
         try:
             if not self._check_rndc_availability():
                 return {"status": "unknown", "message": "RNDC not available"}
-            
+
             # Get zone status
             import subprocess
+
             result = subprocess.run(
                 ["rndc", "-s", self.nameserver, "-p", "953", "status"],
-                capture_output=True, text=True, timeout=30
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
-            
+
             if result.returncode == 0:
                 # Parse zone status from output
                 if zone in result.stdout:
                     return {"status": "active", "message": f"Zone {zone} is active"}
                 else:
-                    return {"status": "inactive", "message": f"Zone {zone} not found or inactive"}
+                    return {
+                        "status": "inactive",
+                        "message": f"Zone {zone} not found or inactive",
+                    }
             else:
-                return {"status": "error", "message": f"RNDC status failed: {result.stderr}"}
-                
+                return {
+                    "status": "error",
+                    "message": f"RNDC status failed: {result.stderr}",
+                }
+
         except Exception as e:
             return {"status": "error", "message": f"Failed to check zone status: {e}"}
 
@@ -548,13 +581,12 @@ class BINDProvider(DNSProvider):
         try:
             if not self._check_rndc_availability():
                 raise RuntimeError("RNDC not available")
-            
+
             return self._run_rndc_command(f"reload {zone}")
-            
+
         except Exception as e:
             logger.error(f"Failed to reload zone {zone}: {e}")
             raise
-
 
 
 class MockDNSProvider(DNSProvider):
@@ -564,6 +596,10 @@ class MockDNSProvider(DNSProvider):
         """Initialize mock provider."""
         self.records = []
         logger.info("Mock DNS provider initialized")
+
+    def _normalize_fqdn(self, fqdn: str) -> str:
+        """Normalize FQDN by removing trailing dot for consistent handling."""
+        return fqdn.rstrip('.') if fqdn else fqdn
 
     def get_records(self, zone: str) -> List[Dict]:
         """Get all DNS records for a zone."""
@@ -578,8 +614,9 @@ class MockDNSProvider(DNSProvider):
 
     def update_record(self, zone: str, record: Dict) -> bool:
         """Update an existing DNS record."""
+        normalized_fqdn = self._normalize_fqdn(record["fqdn"])
         for i, existing in enumerate(self.records):
-            if existing["fqdn"] == record["fqdn"]:
+            if self._normalize_fqdn(existing["fqdn"]) == normalized_fqdn:
                 self.records[i] = record.copy()
                 logger.info(
                     f"Mock: Updated record {record['fqdn']} -> {record['ipv4']}"
@@ -590,8 +627,9 @@ class MockDNSProvider(DNSProvider):
 
     def delete_record(self, zone: str, record: Dict) -> bool:
         """Delete a DNS record."""
+        normalized_fqdn = self._normalize_fqdn(record["fqdn"])
         for i, existing in enumerate(self.records):
-            if existing["fqdn"] == record["fqdn"]:
+            if self._normalize_fqdn(existing["fqdn"]) == normalized_fqdn:
                 del self.records[i]
                 logger.info(f"Mock: Deleted record {record['fqdn']}")
                 return True
