@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-
+    # No inputs needed - just manual trigger
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ github.repository }}
@@ -22,6 +22,43 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install sops and age
+        run: |
+          # Install sops
+          curl -L https://github.com/mozilla/sops/releases/latest/download/sops-v3.7.3.linux.amd64 -o sops
+          chmod +x sops
+          sudo mv sops /usr/local/bin/
+          
+          # Install age
+          curl -L https://github.com/FiloSottile/age/releases/latest/download/age-v1.1.1-linux-amd64.tar.gz | tar -xz
+          sudo mv age /usr/local/bin/
+          
+          echo "Installed versions:"
+          sops --version
+          age --version
+
+      - name: Setup AGE key
+        run: |
+          echo "${{ secrets.AGE_KEY }}" > .age-key
+          chmod 600 .age-key
+          export SOPS_AGE_KEY_FILE=.age-key
+
+      - name: Decrypt secrets using script
+        run: |
+          chmod +x scripts/decrypt-update-key.sh
+          ./scripts/decrypt-update-key.sh
+
+      - name: Verify decrypted files
+        run: |
+          echo "Checking decrypted files..."
+          if [ -f "bind/update-key.conf" ]; then
+            echo "update-key.conf is available"
+            ls -la bind/update-key.conf
+          fi
+          
+          # Clean up the AGE key
+          rm -f .age-key
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
