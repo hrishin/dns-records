@@ -15,6 +15,6 @@ from .providers.dns_client import DNSClient
 
 __all__ = [
     "DNSManager",
-    "RecordManager", 
+    "RecordManager",
     "DNSClient",
 ]

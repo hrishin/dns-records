@@ -6,8 +6,8 @@ to ensure data integrity and safety.
 """
 
 import ipaddress
-import re
 import logging
+import re
 from typing import Tuple
 
 logger = logging.getLogger(__name__)

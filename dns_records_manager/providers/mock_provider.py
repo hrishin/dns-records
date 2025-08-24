@@ -23,7 +23,7 @@ class MockDNSProvider(DNSProvider):
 
     def _normalize_fqdn(self, fqdn: str) -> str:
         """Normalize FQDN by removing trailing dot for consistent handling."""
-        return fqdn.rstrip('.') if fqdn else fqdn
+        return fqdn.rstrip(".") if fqdn else fqdn
 
     def get_records(self, zone: str) -> List[Dict]:
         """Get all DNS records for a zone."""

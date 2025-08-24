@@ -31,8 +31,6 @@ docker run -d \
     --restart unless-stopped \
     bind-dns-server
 
-rm -rf "$TEMP_KEY_FILE"
-
 echo "Container started! Checking status..."
 docker ps | grep bind-dns-server
 

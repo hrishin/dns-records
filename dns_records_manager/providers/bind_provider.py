@@ -8,14 +8,14 @@ import logging
 import re
 from typing import Dict, List, Optional
 
-import dns.resolver
-import dns.query
-import dns.update
-import dns.tsigkeyring
-import dns.zone
 import dns.name
-import dns.rdatatype
+import dns.query
 import dns.rcode
+import dns.rdatatype
+import dns.resolver
+import dns.tsigkeyring
+import dns.update
+import dns.zone
 
 from .base_provider import DNSProvider
 
@@ -68,7 +68,7 @@ class BINDProvider(DNSProvider):
 
     def _normalize_fqdn(self, fqdn: str) -> str:
         """Normalize FQDN by removing trailing dot for consistent handling."""
-        return fqdn.rstrip('.') if fqdn else fqdn
+        return fqdn.rstrip(".") if fqdn else fqdn
 
     def get_records(self, zone: str) -> List[Dict]:
         """Get all DNS records for a zone using dnspython."""
@@ -80,7 +80,9 @@ class BINDProvider(DNSProvider):
                 zone_a_records = self._query_dns(zone, "A")
                 for ip in zone_a_records:
                     normalized_zone = self._normalize_fqdn(zone)
-                    records.append({"fqdn": normalized_zone, "ipv4": ip, "type": "A", "ttl": 300})
+                    records.append(
+                        {"fqdn": normalized_zone, "ipv4": ip, "type": "A", "ttl": 300}
+                    )
             except Exception as e:
                 logger.debug(f"No A records found for zone {zone}: {e}")
 
@@ -168,7 +170,9 @@ class BINDProvider(DNSProvider):
                     logger.error(
                         f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
                     )
-                    raise RuntimeError(f"Failed to create the record: {response.answer}")
+                    raise RuntimeError(
+                        f"Failed to create the record: {response.answer}"
+                    )
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
                 raise e
@@ -210,7 +214,9 @@ class BINDProvider(DNSProvider):
                     logger.error(
                         f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
                     )
-                    raise RuntimeError(f"Failed to update the record: {response.answer}")
+                    raise RuntimeError(
+                        f"Failed to update the record: {response.answer}"
+                    )
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
                 raise e
@@ -235,7 +241,9 @@ class BINDProvider(DNSProvider):
                     logger.error(
                         f"DNS update failed with rcode: {dns.rcode.to_text(response.rcode())}"
                     )
-                    raise RuntimeError(f"Failed to delete the record: {response.answer}")
+                    raise RuntimeError(
+                        f"Failed to delete the record: {response.answer}"
+                    )
             except Exception as e:
                 logger.error(f"DNS update query failed: {e}")
                 raise e
@@ -303,6 +311,7 @@ class BINDProvider(DNSProvider):
         """Check if RNDC is available for zone management."""
         try:
             import subprocess
+
             result = subprocess.run(
                 ["which", "rndc"], capture_output=True, text=True, timeout=5
             )
@@ -314,6 +323,7 @@ class BINDProvider(DNSProvider):
         """Run an RNDC command."""
         try:
             import subprocess
+
             result = subprocess.run(
                 ["rndc", *command.split()], capture_output=True, text=True, timeout=30
             )
@@ -331,7 +341,7 @@ class BINDProvider(DNSProvider):
             # This is a simplified implementation
             # In a real scenario, you'd parse and edit the zone file
             logger.info(f"RNDC update for {record['fqdn']} -> {record['ipv4']}")
-            
+
             # Reload the zone after modification
             return self.reload_zone(zone)
         except Exception as e:
@@ -345,6 +355,7 @@ class BINDProvider(DNSProvider):
                 return {"status": "error", "message": "RNDC not available"}
 
             import subprocess
+
             result = subprocess.run(
                 ["rndc", "status", zone], capture_output=True, text=True, timeout=10
             )

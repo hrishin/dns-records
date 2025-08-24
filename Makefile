@@ -81,15 +81,18 @@ run-dry-run:
 	@echo "Running DNS manager in dry-run mode..."
 	python main.py --csv input.csv --config configs/config_bind.yaml --zone ib.bigbank.com --dry-run
 
-run-live:
+run-live: decrypt-key
 	@echo "Running DNS manager in live mode..."
 	@echo "WARNING: This will make actual DNS changes!"
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
-		python main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com;\
+		python main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com; \
 	else \
 		echo "Operation cancelled."; \
 	fi
+
+	@echo "Encrypting update-key.conf after changes..."
+	./scripts/encrypt-update-key.sh;
 
 clean:
 	@echo "Cleaning up generated files..."
