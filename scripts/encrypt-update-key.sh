@@ -1,26 +1,20 @@
 #!/bin/bash
 
-# Script to encrypt the update-key.conf file using SOPS
-# Usage: ./scripts/encrypt-update-key.sh
-
 set -e
 
-# Check if SOPS is installed
-if ! command -v sops &> /dev/null; then
-    echo "Error: SOPS is not installed. Please install it first:"
-    echo "  brew install sops"
-    exit 1
-fi
+SCRIPT_DIR=$(dirname "$0")
+source "$SCRIPT_DIR/lib/sops-checks.sh"
 
-# Check if age key exists
-if [ ! -f ".age-key" ]; then
-    echo "Error: Age private key not found. Please ensure .age-key exists in the project root."
-    exit 1
-fi
+check_sops
+check_age_key
 
-# Encrypt the file
-echo "Encrypting bind/update-key.conf..."
-SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
+function encrypt_update_key() {
+    # Encrypt the file
+    echo "Encrypting bind/update-key.conf..."
+    SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
 
-echo "File encrypted successfully!"
-echo "The file is now encrypted and safe to commit to version control."
+    echo "File encrypted successfully!"
+    echo "The file is now encrypted and safe to commit to version control."
+}
+
+encrypt_update_key

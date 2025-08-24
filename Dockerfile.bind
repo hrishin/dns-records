@@ -14,14 +14,13 @@ RUN mkdir -p /var/cache/bind /var/lib/bind /var/log/named /etc/bind/keys
 COPY bind/named.conf /etc/bind/named.conf
 COPY bind/zones/ib.bigbank.com.zone /var/lib/bind/ib.bigbank.com.zone
 
-# Copy authentication keys (only the update-key.conf, not private keys)
-COPY bind/update-key.conf /etc/bind/keys/
+# Note: update-key.conf will be mounted as a volume at runtime
+# This allows for encrypted credential management
 
 # Set proper permissions - make zone directory writable for dynamic updates
 RUN chown -R bind:bind /var/cache/bind /var/lib/bind /var/log/named /etc/bind/keys && \
     chmod 755 /var/lib/bind && \
-    chmod 644 /var/lib/bind/ib.bigbank.com.zone && \
-    chmod 600 /etc/bind/keys/*
+    chmod 644 /var/lib/bind/ib.bigbank.com.zone
 
 # Expose DNS ports
 EXPOSE 53/udp 53/tcp

@@ -2,6 +2,21 @@
 
 set -e
 
+echo "Running BIND DNS with SOPS decryption and volume mounting"
+
+SCRIPT_DIR=$(dirname "$0")
+source "$SCRIPT_DIR/lib/sops-checks.sh"
+
+check_sops
+check_age_key
+
+echo ""
+echo "Decrypting update-key.conf..."
+
+# Create a temporary decrypted file
+TEMP_KEY_FILE=$(mktemp)
+sops -d bind/update-key.conf > "$TEMP_KEY_FILE"
+
 echo "Building BIND DNS container with docker..."
 docker build -f Dockerfile.bind -t bind-dns-server .
 
@@ -12,8 +27,11 @@ docker run -d \
     -p 53:53/tcp \
     -p 953:953/tcp \
     -v ./bind/zones:/etc/bind/zones:ro \
+    -v "$TEMP_KEY_FILE:/etc/bind/keys/update-key.conf:ro" \
     --restart unless-stopped \
     bind-dns-server
+
+rm -rf "$TEMP_KEY_FILE"
 
 echo "Container started! Checking status..."
 docker ps | grep bind-dns-server
@@ -24,8 +42,8 @@ echo "=================="
 echo "Container name: bind-dns-server"
 echo "DNS port: 53 (UDP/TCP)"
 echo "RNDC port: 953 (TCP)"
-echo "Zone files: ./zones/"
-echo "RNDC key: ./rndc.key"
+echo "Zone files: ./bind/zones/"
+echo "Update key: ./bind/update-key.conf (mounted as volume)"
 echo ""
 echo "To view logs: docker logs bind-dns-server"
 echo "To stop: docker stop bind-dns-server"
