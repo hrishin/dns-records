@@ -42,16 +42,17 @@ jobs:
           sops --version
           age --version
 
-      - name: Setup AGE key
+      - name: Setup AGE key and decrypt secrets
         run: |
           echo "${{ secrets.AGE_KEY }}" > .age-key
           chmod 600 .age-key
           export SOPS_AGE_KEY_FILE=.age-key
-
-      - name: Decrypt secrets using script
-        run: |
+          
           chmod +x scripts/decrypt-update-key.sh
           ./scripts/decrypt-update-key.sh
+          
+          # Clean up the AGE key
+          rm -f .age-key
 
       - name: Verify decrypted files
         run: |
@@ -60,9 +61,6 @@ jobs:
             echo "update-key.conf is available"
             ls -la bind/update-key.conf
           fi
-          
-          # Clean up the AGE key
-          rm -f .age-key
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
