@@ -39,12 +39,21 @@ def main():
         help="Show what would be changed without making changes"
     )
     parser.add_argument(
+        "--output-file", "-o",
+        help="File to save dry run diff output (only used with --dry-run)"
+    )
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose logging"
     )
 
     args = parser.parse_args()
+
+    # Validate arguments
+    if args.output_file and not args.dry_run:
+        print("Error: --output-file can only be used with --dry-run")
+        sys.exit(1)
 
     # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
@@ -68,7 +77,12 @@ def main():
         dns_manager = DNSManager(args.config)
         
         # Process CSV
-        success = dns_manager.process_csv(args.csv, args.zone, dry_run=args.dry_run)
+        success = dns_manager.process_csv(
+            args.csv, 
+            args.zone, 
+            dry_run=args.dry_run,
+            output_file=args.output_file if args.dry_run else None
+        )
         
         if success:
             print("DNS record management completed successfully")

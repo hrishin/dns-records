@@ -13,9 +13,9 @@ import logging
 import re
 import sys
 from pathlib import Path
+from datetime import datetime
 
 from typing import Dict, List, Optional, Tuple
-import click
 import yaml
 from rich.console import Console
 from rich.table import Table
@@ -91,7 +91,7 @@ class DNSManager:
             "logging": {"level": "INFO", "file": "dns_manager.log"},
         }
 
-    def process_csv(self, csv_path: str, zone: str, dry_run: bool = False) -> bool:
+    def process_csv(self, csv_path: str, zone: str, dry_run: bool = False, output_file: Optional[str] = None) -> bool:
         """Process CSV file and manage DNS records."""
         try:
             # Parse CSV file
@@ -121,6 +121,12 @@ class DNSManager:
                 console.print(
                     "[yellow]DRY RUN MODE - No changes will be applied[/yellow]"
                 )
+                
+                # Save dry run output to file if specified
+                if output_file:
+                    self._save_dry_run_output(changes, output_file)
+                    console.print(f"[green]Dry run output saved to: {output_file}[/green]")
+                
                 return True
 
             # Apply changes
@@ -296,53 +302,53 @@ class DNSManager:
         )
         return success_count == total_changes
 
-
-@click.command()
-@click.option("--csv", "csv_path", required=True, help="Path to CSV file")
-@click.option("--zone", required=True, help="DNS zone (e.g., ib.bigbank.com)")
-@click.option(
-    "--config", "config_path", default="config.yaml", help="Configuration file path"
-)
-@click.option("--dry-run", is_flag=True, help="Preview changes without applying them")
-@click.option("--provider", help="DNS provider to use")
-def main(csv_path: str, zone: str, config_path: str, dry_run: bool, provider: str):
-    """DNS Records Manager - Automated DNS record management."""
-
-    console.print(f"[bold blue]DNS Records Manager[/bold blue]")
-    console.print(f"Zone: [cyan]{zone}[/cyan]")
-    console.print(f"CSV: [cyan]{csv_path}[/cyan]")
-    console.print(
-        f"Dry Run: [{'yellow' if dry_run else 'green'}]{dry_run}[/{'yellow' if dry_run else 'green'}]"
-    )
-    console.print()
-
-    try:
-        # Initialize DNS manager
-        dns_manager = DNSManager(config_path)
-
-        # Override provider if specified
-        if provider:
-            dns_manager.config["default_provider"] = provider
-
-        # Process CSV
-        success = dns_manager.process_csv(csv_path, zone, dry_run)
-
-        if success:
-            console.print(
-                "\n[bold green]✓ Operation completed successfully![/bold green]"
-            )
-            sys.exit(0)
-        else:
-            console.print("\n[bold red]✗ Operation failed![/bold red]")
-            sys.exit(1)
-
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Operation cancelled by user[/yellow]")
-        sys.exit(1)
-    except Exception as e:
-        console.print(f"\n[bold red]Fatal error: {e}[/bold red]")
-        logger.error(f"Fatal error: {e}")
-        sys.exit(1)
+    def _save_dry_run_output(self, changes: Dict, output_file: str):
+        """Save dry run output to a file."""
+        try:
+            with open(output_file, "w") as f:
+                f.write("=" * 60 + "\n")
+                f.write("DNS RECORDS MANAGER - DRY RUN SUMMARY\n")
+                f.write("=" * 60 + "\n\n")
+                
+                f.write(f"Total Changes: {changes['total_changes']}\n")
+                f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                
+                if changes.get("creates", []):
+                    f.write("RECORDS TO CREATE:\n")
+                    f.write("-" * 20 + "\n")
+                    for record in changes["creates"]:
+                        f.write(f"  + {record['fqdn']:<30} -> {record['ipv4']}\n")
+                    f.write("\n")
+                
+                if changes.get("updates", []):
+                    f.write("RECORDS TO UPDATE:\n")
+                    f.write("-" * 20 + "\n")
+                    for record in changes["updates"]:
+                        f.write(f"  ~ {record['fqdn']:<30} -> {record['ipv4']}\n")
+                    f.write("\n")
+                
+                if changes.get("deletes", []):
+                    f.write("RECORDS TO DELETE:\n")
+                    f.write("-" * 20 + "\n")
+                    for record in changes["deletes"]:
+                        f.write(f"  - {record['fqdn']}\n")
+                    f.write("\n")
+                
+                if changes.get("no_changes", []):
+                    f.write("RECORDS WITH NO CHANGES:\n")
+                    f.write("-" * 25 + "\n")
+                    for record in changes["no_changes"]:
+                        f.write(f"  = {record['fqdn']}\n")
+                    f.write("\n")
+                
+                f.write("=" * 60 + "\n")
+                f.write("END OF DRY RUN SUMMARY\n")
+                f.write("=" * 60 + "\n")
+                
+            logger.info(f"Dry run output saved to: {output_file}")
+        except Exception as e:
+            logger.error(f"Failed to save dry run output to {output_file}: {e}")
+            console.print(f"[red]Warning: Failed to save dry run output to {output_file}: {e}[/red]")
 
 
 if __name__ == "__main__":

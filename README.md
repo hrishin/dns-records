@@ -165,6 +165,9 @@ python main.py --csv input.csv --zone ib.bigbank.com
 # Dry run to preview changes
 python main.py --csv input.csv --zone ib.bigbank.com --dry-run
 
+# Dry run with output saved to file
+python main.py --csv input.csv --zone ib.bigbank.com --dry-run --output-file changes.txt
+
 # Use custom configuration file
 python main.py --csv input.csv --zone ib.bigbank.com --config my-config.yaml
 
@@ -182,6 +185,9 @@ dns-manager --csv input.csv --zone ib.bigbank.com
 
 # Dry run to preview changes
 dns-manager --csv input.csv --zone ib.bigbank.com --dry-run
+
+# Dry run with output saved to file
+dns-manager --csv input.csv --zone ib.bigbank.com --dry-run --output-file changes.txt
 ```
 
 #### CLI Options
