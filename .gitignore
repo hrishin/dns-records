@@ -21,7 +21,7 @@ venv/
 env/
 .venv/
 .env/
-
+dns_records_manager.egg-info
 
 # BIND specific files
 bind-keys/
