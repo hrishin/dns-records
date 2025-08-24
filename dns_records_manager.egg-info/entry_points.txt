@@ -1,0 +1,2 @@
+[console_scripts]
+dns-manager = dns_records_manager.cli.main:main

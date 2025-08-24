@@ -1,3 +1,45 @@
+Metadata-Version: 2.4
+Name: dns-records-manager
+Version: 1.0.0
+Summary: Automated DNS record management for enterprise environments
+Home-page: https://github.com/example/dns-records-manager
+Author: DNS Records Manager Team
+Author-email: team@example.com
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Internet :: Name Service (DNS)
+Classifier: Topic :: System :: Systems Administration
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: boto3>=1.26.0
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: click>=8.1.0
+Requires-Dist: dnspython>=2.3.0
+Requires-Dist: ipaddress>=1.0.23
+Requires-Dist: requests>=2.28.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: tabulate>=0.9.0
+Requires-Dist: colorama>=0.4.6
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: flake8>=6.0.0
+Requires-Dist: black>=23.0.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # DNS Records Manager
 
 ## Overview
@@ -138,7 +180,16 @@ python main.py --csv input.csv --zone ib.bigbank.com --config my-config.yaml
 python main.py --csv input.csv --zone ib.bigbank.com --verbose
 ```
 
-#### Method 2: After installation (recommended)
+#### Method 2: As a Python module
+```bash
+# Process a CSV file
+python -m dns_records_manager.cli.main --csv input.csv --zone ib.bigbank.com
+
+# Dry run to preview changes
+python -m dns_records_manager.cli.main --csv input.csv --zone ib.bigbank.com --dry-run
+```
+
+#### Method 3: After installation (recommended)
 ```bash
 # Install the package
 pip install -e .
@@ -176,14 +227,39 @@ logging:
   file: dns_manager.log
 ```
 
+## Deployment Options
+
+### Local Development
+```bash
+# Quick setup
+make quick-start
+make run-dry-run
+make test
+```
 ## Security Features
 
 ### Authentication & Authorization
 - BIND key-based authentication
+- Least privilege access control
+
+### Network Security
+- Firewall rules for DNS provider APIs
+- VPN support for private networks
+- Rate limiting and API protection
 
 ### Data Protection
-- Secure credential storage using sops
+- Secure credential storage
 - Environment variable support
+- Secret management integration (Vault, AWS Secrets Manager)
+
+## Testing
+### Comprehensive Test Suite
+- Unit tests for all components
+- Integration tests for complete workflows
+
+  ```bash
+  make test
+  ```
 
 ### Compliance & Audit
 - Change tracking and documentation
@@ -201,7 +277,6 @@ logging:
 ### Integration Capabilities
 - Rest API Service to manage the DNS entires
 - Configuration management tools (Ansible)
-- CLI or bash scripting
 - Monitoring systems (Prometheus, Grafana)
 
 

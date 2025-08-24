@@ -21,9 +21,9 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from dns_client import DNSClient
-from record_manager import RecordManager
-from validators import validate_fqdn, validate_ipv4
+from ..providers.dns_client import DNSClient
+from .record_manager import RecordManager
+from ..utils.validators import validate_fqdn, validate_ipv4
 
 # Initialize rich console and logger
 console = Console()
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class DNSManager:
     """Main DNS management class that orchestrates the entire process."""
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "configs/config.yaml"):
         """Initialize the DNS manager with configuration."""
         self.config = self._load_config(config_path)
         self.dns_client = DNSClient(self.config)

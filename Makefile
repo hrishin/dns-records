@@ -6,7 +6,10 @@ help:
 	@echo ""
 	@echo "Installation:"
 	@echo "  install          Install dependencies"
+	@echo "  build            Build the package"
+	@echo "  install-package  Install package in development mode"
 	@echo "  install-dev      Install development dependencies"
+	@echo "  uninstall        Uninstall the package"
 	@echo ""
 	@echo "Infrastructure:"
 	@echo "  bind-setup       Setup BIND DNS server container"
@@ -17,7 +20,9 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test             Run all tests"
+	@echo "  test-package     Run package tests"
 	@echo "  test-coverage    Run tests with coverage report"
+	@echo "  test-package-coverage Run package tests with coverage"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  lint             Run linting checks"
@@ -39,44 +44,45 @@ install:
 	pip install -r requirements.txt
 	@echo "Installation complete!"
 
-install-dev: install
+build:
+	@echo "Building package..."
+	python setup.py build
+	@echo "Package built successfully!"
+
+install-package: build
+	@echo "Installing package in development mode..."
+	pip install -e .
+	@echo "Package installed in development mode!"
+
+install-dev: install install-package
 	@echo "Installing development dependencies..."
 	pip install pytest pytest-cov black flake8 mypy
 	@echo "Development dependencies installed!"
 
 test:
 	@echo "Running tests..."
-	python -m pytest test_dns_manager.py -v
-
-test-coverage:
-	@echo "Running tests with coverage..."
-	python -m pytest test_dns_manager.py --cov=. --cov-report=html --cov-report=term
-	@echo "Coverage report generated in htmlcov/"
+	python -m pytest main.py -v
 
 lint:
 	@echo "Running linting checks..."
-	flake8 *.py
+	flake8 *.py dns_records_manager/
 	@echo "Linting complete!"
 
 format:
 	@echo "Formatting code..."
-	black *.py
+	black *.py dns_records_manager/
 	@echo "Code formatting complete!"
-
-demo:
-	@echo "Starting interactive demo..."
-	python demo.py
 
 run-dry-run:
 	@echo "Running DNS manager in dry-run mode..."
-	python dns_manager.py --csv sample_records.csv --config config_bind.yaml --zone ib.bigbank.com --dry-run
+	python main.py --csv input.csv --config configs/config_bind.yaml --zone ib.bigbank.com --dry-run
 
 run-live:
 	@echo "Running DNS manager in live mode..."
 	@echo "WARNING: This will make actual DNS changes!"
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
-		python dns_manager.py --csv sample_records.csv  --config config_bind.yaml --zone ib.bigbank.com;\
+		python main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com;\
 	else \
 		echo "Operation cancelled."; \
 	fi
@@ -103,45 +109,50 @@ clean-logs:
 
 setup-dev: install-dev
 	@echo "Setting up development environment..."
-	cp config.example.yaml config.yaml
+	cp configs/config.example.yaml configs/config.yaml
 	@echo "Development environment ready!"
-	@echo "Edit config.yaml with your settings"
+	@echo "Edit configs/config.yaml with your settings"
 
 check-deps:
 	@echo "Checking dependency versions..."
 	pip list | grep -E "(boto3|PyYAML|click|dnspython|rich)"
 
+uninstall:
+	@echo "Uninstalling package..."
+	pip uninstall dns-records-manager -y
+	@echo "Package uninstalled!"
+
 # BIND DNS Server Management
 bind-setup:
 	@echo "Setting up BIND DNS server..."
 	@echo "Building and starting BIND container..."
-	./run-bind.sh
+	./scripts/run-bind.sh
 	@echo "BIND DNS server setup complete!"
 
 bind-rebuild:
 	@echo "Rebuilding BIND DNS server container..."
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		podman stop bind-dns-server; \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
+		docker stop bind-dns-server; \
 	fi
-	@if podman ps -aq -f name=bind-dns-server | grep -q .; then \
-		podman rm bind-dns-server; \
+	@if docker ps -aq -f name=bind-dns-server | grep -q .; then \
+		docker rm bind-dns-server; \
 	fi
-	podman build -f Dockerfile.bind -t bind-dns-server .
+	docker build -f Dockerfile.bind -t bind-dns-server .
 	@echo "BIND DNS server container rebuilt!"
 
 bind-start:
 	@echo "Starting BIND DNS server..."
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
 		echo "BIND DNS server is already running."; \
 	else \
-		podman start bind-dns-server || ./run-bind.sh; \
+		docker start bind-dns-server || ./scripts/run-bind.sh; \
 	fi
 	@echo "BIND DNS server started!"
 
 bind-stop:
 	@echo "Stopping BIND DNS server..."
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		podman stop bind-dns-server; \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
+		docker stop bind-dns-server; \
 		echo "BIND DNS server stopped."; \
 	else \
 		echo "BIND DNS server is not running."; \
@@ -149,8 +160,8 @@ bind-stop:
 
 bind-status:
 	@echo "BIND DNS Server Status:"
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		podman ps | grep bind-dns-server; \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
+		docker ps | grep bind-dns-server; \
 		echo ""; \
 		echo "Testing DNS resolution:"; \
 		dig @127.0.0.1 db.ib.bigbank.com +short || echo "DNS resolution failed"; \
@@ -160,15 +171,15 @@ bind-status:
 
 bind-logs:
 	@echo "BIND DNS Server Logs:"
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		podman logs bind-dns-server | tail -20; \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
+		docker logs bind-dns-server | tail -20; \
 	else \
 		echo "BIND DNS server is not running."; \
 	fi
 
 bind-test:
 	@echo "Testing BIND DNS resolution..."
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
 		echo "Testing db.ib.bigbank.com:"; \
 		dig @127.0.0.1 db.ib.bigbank.com; \
 		echo ""; \
@@ -178,11 +189,11 @@ bind-test:
 
 bind-clean:
 	@echo "Removing BIND DNS server container..."
-	@if podman ps -q -f name=bind-dns-server | grep -q .; then \
-		podman stop bind-dns-server; \
+	@if docker ps -q -f name=bind-dns-server | grep -q .; then \
+		docker stop bind-dns-server; \
 	fi
-	@if podman ps -aq -f name=bind-dns-server | grep -q .; then \
-		podman rm bind-dns-server; \
+	@if docker ps -aq -f name=bind-dns-server | grep -q .; then \
+		docker rm bind-dns-server; \
 	fi
 	@echo "BIND DNS server container removed!"
 

@@ -3,10 +3,10 @@
 
 dns_providers:
   bind:
-    nameserver: 127.0.0.1  # Local BIND server for testing
-    port: 53               # Standard DNS port
-    key_file: bind/update-key.conf  # Uncomment if using authenticated updates
-    key_name: update-key             # Uncomment if using authenticated updates
+    nameserver: 127.0.0.1
+    port: 53
+    key_file: bind/update-key.conf
+    key_name: update-key
     # zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Uncomment if using zone files
 
 default_provider: bind
