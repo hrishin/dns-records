@@ -224,9 +224,7 @@ class BINDProvider(DNSProvider):
 
     def _handle_dns_error(self, response: dns.message.Message, operation: str) -> None:
         """Handle DNS error responses by logging and raising appropriate exceptions."""
-        error_message = (
-            f"DNS update failed with response code: {dns.rcode.to_text(response.rcode())}"
-        )
+        error_message = f"DNS update failed with response code: {dns.rcode.to_text(response.rcode())}"
         if response.answer:
             error_message += f", server response: {response.answer}"
         logger.error(error_message)

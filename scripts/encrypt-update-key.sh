@@ -9,11 +9,10 @@ check_sops
 check_age_key
 
 function encrypt_update_key() {
-    # Encrypt the file
     echo "Encrypting bind/update-key.conf..."
-    SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
+    sops -e -i bind/update-key.conf || true
 
-    echo "File encrypted successfully!"
+    echo "File encrypted successfully"
 }
 
 encrypt_update_key

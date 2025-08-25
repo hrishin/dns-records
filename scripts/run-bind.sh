@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# This script is used to test the run BIND DNS server locally
+# SOPSis used to decrypt the update-key.conf file which is present in the bind/update-key.conf
+# to authenticate with the BIND DNS server.
+# It is used to test the BIND DNS server with the SOPS decryption and volume mounting.
+
 set -e
 
 echo "Running BIND DNS with SOPS decryption and volume mounting"
@@ -13,9 +18,7 @@ check_age_key
 echo ""
 echo "Decrypting update-key.conf..."
 
-# Create a temporary decrypted file
-TEMP_KEY_FILE=$(mktemp)
-sops -d bind/update-key.conf > "$TEMP_KEY_FILE"
+sops -d -i bind/update-key.conf || true
 
 echo "Building BIND DNS container with docker..."
 docker build -f Dockerfile.bind -t bind-dns-server .
@@ -27,7 +30,7 @@ docker run -d \
     -p 53:53/tcp \
     -p 953:953/tcp \
     -v ./bind/zones:/etc/bind/zones:ro \
-    -v "$TEMP_KEY_FILE:/etc/bind/keys/update-key.conf:ro" \
+    -v ./bind/update-key.conf:/etc/bind/keys/update-key.conf:ro \
     --restart unless-stopped \
     bind-dns-server
 

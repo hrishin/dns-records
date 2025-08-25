@@ -1,5 +1,6 @@
 # BIND DNS Provider Configuration
-# This configuration uses the BIND provider with dig and nsupdate
+
+# This configuration uses the BIND provider with to  connect to the BIND DNS server locally
 
 dns_providers:
   bind:

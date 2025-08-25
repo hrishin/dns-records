@@ -1,4 +1,4 @@
-.PHONY: help install test clean demo run-dry-run run-live lint format
+.PHONY: help install build install-package install-dev test test-integration test-clean clean clean-all clean-logs setup-dev check-deps uninstall bind-setup bind-rebuild bind-start bind-stop bind-status bind-logs bind-test bind-clean decrypt-key encrypt-key lint format demo-dry-run demo-live run-dry-run run-live
 
 # Default target
 help:
@@ -20,16 +20,15 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test             Run all tests"
-	@echo "  test-package     Run package tests"
-	@echo "  test-coverage    Run tests with coverage report"
-	@echo "  test-package-coverage Run package tests with coverage"
+	@echo "  test-integration Run integration tests with behave"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  lint             Run linting checks"
 	@echo "  format           Format code with black"
 	@echo ""
 	@echo "Running:"
-	@echo "  demo             Run interactive demo"
+	@echo "  demo-dry-run     Run interactive demo using mock DNS server (dry-run mode)"
+	@echo "  demo-live        Run interactive demo using mock DNS server (live mode)"
 	@echo "  run-dry-run      Run with sample data (dry-run mode)"
 	@echo "  run-live         Run with sample data (live mode)"
 	@echo ""
@@ -45,6 +44,10 @@ help:
 
 install:
 	@echo "Installing dependencies..."
+	@if [ ! -d "venv" ]; then \
+		python3 -m venv venv; \
+	fi
+	. venv/bin/activate
 	pip install -r requirements.txt
 	@echo "Installation complete!"
 
@@ -63,8 +66,6 @@ install-dev: install install-package
 	pip install pytest pytest-cov black flake8 mypy
 	@echo "Development dependencies installed!"
 
-test: test-unit test-integration
-
 lint:
 	@echo "Running linting checks..."
 	flake8 *.py dns_records_manager/
@@ -74,6 +75,14 @@ format:
 	@echo "Formatting code..."
 	black *.py dns_records_manager/
 	@echo "Code formatting complete!"
+
+demo-dry-run:
+	@echo "Running DNS manager in dry-run mode..."
+	python main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com --dry-run
+
+demo-live:
+	@echo "Running DNS manager in live mode..."
+	python main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com
 
 run-dry-run:
 	@echo "Running DNS manager in dry-run mode..."
@@ -106,7 +115,7 @@ clean:
 	rm -f demo_records.csv
 	@echo "Cleanup complete!"
 
-clean-all: clean bind-clean
+clean-all: clean bind-clean encrypt-key
 	@echo "Full cleanup complete!"
 
 clean-logs:
@@ -213,7 +222,6 @@ encrypt-key:
 	@echo "Encrypting update-key.conf after changes..."
 	./scripts/encrypt-update-key.sh
 
-# Test targets
 .PHONY: test test-integration test-clean
 
 # Run all tests
@@ -236,17 +244,6 @@ test-clean:
 	rm -rf htmlcov/
 	rm -rf .coverage
 	rm -f test_dns_manager.log
-
-# Install test dependencies
-test-deps:
-	@echo "Installing test dependencies..."
-	pip install -r requirements.txt
-
-# Run tests with coverage report
-test-coverage: test
-	@echo "Generating coverage report..."
-	coverage html
-	@echo "Coverage report generated in htmlcov/"
 
 # Default help
 .DEFAULT_GOAL := help
