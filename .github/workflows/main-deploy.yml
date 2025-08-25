@@ -115,7 +115,7 @@ jobs:
         chmod 600 .age-key
         export SOPS_AGE_KEY_FILE=.age-key
 
-        make decrypt-update-key
+        make decrypt-key
   
         echo "Starting DNS record deployment..."
         echo "Zone: ib.bigbank.com"
@@ -136,7 +136,7 @@ jobs:
           exit 1
         fi
 
-        make encrypt-update-key
+        make encrypt-key
         
         if [ $? -eq 0 ]; then
             echo "Creating deployment summary..."

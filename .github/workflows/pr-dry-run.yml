@@ -81,7 +81,7 @@ jobs:
         chmod 600 .age-key
         export SOPS_AGE_KEY_FILE=.age-key
 
-        make decrypt-update-key
+        make decrypt-key
   
         # Create output directory
         mkdir -p pr-output
@@ -95,7 +95,7 @@ jobs:
           --output-file pr-output/dry-run-results.txt \
           --verbose
 
-        make encrypt-update-key
+        make encrypt-key
 
         if [ $? -eq 0 ]; then
           echo "status=success" >> $GITHUB_OUTPUT
