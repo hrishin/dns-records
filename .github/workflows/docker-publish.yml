@@ -48,7 +48,9 @@ jobs:
           
           # Install age
           echo "Installing age..."
-          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux.amd64.tar.gz"
+          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz"
+          echo "Downloaded file size: $(stat -c%s age.tar.gz) bytes"
+          file age.tar.gz
           tar -xzf age.tar.gz
           sudo mv age/age /usr/local/bin/
           rm -rf age age.tar.gz
@@ -111,7 +113,9 @@ jobs:
           
           # Install age
           echo "Installing age..."
-          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux.amd64.tar.gz"
+          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz"
+          echo "Downloaded file size: $(stat -c%s age.tar.gz) bytes"
+          file age.tar.gz
           tar -xzf age.tar.gz
           sudo mv age/age /usr/local/bin/
           rm -rf age age.tar.gz
