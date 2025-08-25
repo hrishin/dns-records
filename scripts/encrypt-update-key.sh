@@ -14,7 +14,6 @@ function encrypt_update_key() {
     SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
 
     echo "File encrypted successfully!"
-    echo "The file is now encrypted and safe to commit to version control."
 }
 
 encrypt_update_key

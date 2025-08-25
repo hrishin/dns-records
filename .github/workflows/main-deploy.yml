@@ -6,6 +6,7 @@ on:
     branches: [main, master]
     paths:
       - 'input.csv'
+      - .github/workflows/main-deploy.yml
 
 jobs:
   dns-deploy:
@@ -89,13 +90,7 @@ jobs:
           echo "Error: input.csv file is empty"
           exit 1
         fi
-        
-        # Basic CSV structure validation
-        if ! head -n 1 input.csv | grep -q "FQDN,IPv4"; then
-          echo "Error: input.csv must have header 'FQDN,IPv4'"
-          exit 1
-        fi
-        
+
         # Count records (excluding header)
         record_count=$(tail -n +2 input.csv | wc -l)
         echo "Found $record_count DNS records in input.csv"
@@ -107,7 +102,7 @@ jobs:
         echo "CSV content preview:"
         echo "===================="
         head -n 5 input.csv
-        if [ $record_count -gt 5 ]; then
+        if [ $record_count -gt 10 ]; then
           echo "..."
           echo "Total records: $record_count"
         fi
@@ -119,10 +114,9 @@ jobs:
         echo "${{ secrets.AGE_KEY }}" > .age-key
         chmod 600 .age-key
         export SOPS_AGE_KEY_FILE=.age-key
+
+        make decrypt-update-key
   
-        # Create output directory
-        mkdir -p deploy-output
-        
         echo "Starting DNS record deployment..."
         echo "Zone: ib.bigbank.com"
         echo "Nameserver: 44.216.94.190"
@@ -141,6 +135,8 @@ jobs:
           echo "DNS deployment failed"
           exit 1
         fi
+
+        make encrypt-update-key
         
         if [ $? -eq 0 ]; then
             echo "Creating deployment summary..."

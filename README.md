@@ -1,6 +1,7 @@
 # DNS Records Manager
 
-[![PR Dry-Run](https://github.com/{owner}/{repo}/workflows/DNS%20Records%20Manager%20PR%20Dry-Run/badge.svg)](https://github.com/{owner}/{repo}/actions/workflows/pr-dry-run.yml)
+[![Main Deploy](https://github.com/hriships/dns-records-manager/workflows/DNS%20Records%20Manager%20Main%20Deploy/badge.svg)](https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml)
+[![Docker Build](https://github.com/hriships/dns-records-manager/workflows/Build%20and%20Publish%20Docker%20Image/badge.svg)](https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml)
 
 ## Overview
 

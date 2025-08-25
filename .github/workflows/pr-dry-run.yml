@@ -5,6 +5,7 @@ on:
     branches: [main, master]
     paths:
       - 'input.csv'
+      - .github/workflows/pr-dry-run.yml
 
 jobs:
   dns-dry-run:
@@ -79,6 +80,8 @@ jobs:
         echo "${{ secrets.AGE_KEY }}" > .age-key
         chmod 600 .age-key
         export SOPS_AGE_KEY_FILE=.age-key
+
+        make decrypt-update-key
   
         # Create output directory
         mkdir -p pr-output
@@ -91,6 +94,8 @@ jobs:
           --dry-run \
           --output-file pr-output/dry-run-results.txt \
           --verbose
+
+        make encrypt-update-key
 
         if [ $? -eq 0 ]; then
           echo "status=success" >> $GITHUB_OUTPUT
