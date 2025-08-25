@@ -1,0 +1,187 @@
+name: DNS Records Manager PR Dry-Run
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'input.csv'
+
+jobs:
+  dns-dry-run:
+    runs-on: ubuntu-latest
+    
+    # Ensure only one dry-run runs at a time
+    concurrency:
+      group: dns-dry-run
+      cancel-in-progress: false
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install sops and age
+      run: |
+        # Install sops
+        echo "Installing sops..."
+        curl -L -o sops "https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64"
+        chmod +x sops
+        sudo mv sops /usr/local/bin/
+        
+        # Install age
+        echo "Installing age..."
+        curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz"
+        echo "Downloaded file size: $(stat -c%s age.tar.gz) bytes"
+        file age.tar.gz
+        tar -xzf age.tar.gz
+        sudo mv age/age /usr/local/bin/
+        rm -rf age age.tar.gz
+        
+        echo "Installed versions:"
+        sops --version
+        age --version
+
+    - name: Create BIND config for PR testing
+      run: |
+        mkdir -p configs
+        cat > configs/config_bind_pr.yaml << 'EOF'
+        dns_providers:
+          bind:
+            nameserver: 44.216.94.190
+            port: 53
+            key_file: bind/update-key.conf
+            key_name: update-key
+        
+        default_provider: bind
+        
+        logging:
+          level: INFO
+          file: dns_manager_pr.log
+        EOF
+        
+    - name: Run DNS dry-run
+      id: dry-run
+      run: |
+        echo "${{ secrets.AGE_KEY }}" > .age-key
+        chmod 600 .age-key
+        export SOPS_AGE_KEY_FILE=.age-key
+  
+        # Create output directory
+        mkdir -p pr-output
+        
+        # Run the dry-run command
+        python -m dns_records_manager.cli.main \
+          --config configs/config_bind_pr.yaml \
+          --zone ib.bigbank.com \
+          --csv input.csv \
+          --dry-run \
+          --output-file pr-output/dry-run-results.txt \
+          --verbose
+
+        if [ $? -eq 0 ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "Dry-run completed successfully"
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "Dry-run failed, but continuing to capture any output"
+          
+          # Create a fallback output file if the command failed
+          if [ ! -f "pr-output/dry-run-results.txt" ]; then
+            echo "Dry-run command failed. Check the logs above for details." > pr-output/dry-run-results.txt
+          fi
+        fi
+        
+    - name: Read dry-run output
+      id: output
+      run: |
+        if [ -f "pr-output/dry-run-results.txt" ]; then
+          # Read the output file and escape newlines for GitHub Actions
+          content=$(cat pr-output/dry-run-results.txt | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "content=$content" >> $GITHUB_OUTPUT
+        else
+          echo "content=No dry-run output file found" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo
+          });
+          
+          // Check if we already commented on this PR
+          const existingComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('## DNS Records Manager Dry-Run Results')
+          );
+          
+          const status = '${{ steps.dry-run.outputs.status }}';
+          const output = '${{ steps.output.outputs.content }}';
+          
+          // Truncate output if it's too long (GitHub has comment length limits)
+          const maxOutputLength = 4000;
+          let truncatedOutput = output;
+          let truncationNote = '';
+          
+          if (output.length > maxOutputLength) {
+            truncatedOutput = output.substring(0, maxOutputLength) + '\n... [Output truncated due to length]';
+            truncationNote = '\n\n> **Note:** Output was truncated. Full results are available in the workflow artifacts.';
+          }
+          
+          let commentBody = `## DNS Records Manager Dry-Run Results
+          
+          **Status:** ${status === 'success' ? '✅ Success' : '❌ Failed'}
+          
+          **Zone:** \`ib.bigbank.com\`
+          **Nameserver:** \`44.216.94.190\`
+          **Configuration:** BIND Provider
+          
+          ### Dry-Run Output:
+          \`\`\`
+          ${truncatedOutput}
+          \`\`\`${truncationNote}
+          
+          ---
+          *This comment was automatically generated by the DNS Records Manager PR workflow.*`;
+          
+          if (existingComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              comment_id: existingComment.id,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+          }
+          
+    - name: Upload dry-run output as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dns-dry-run-results
+        path: pr-output/
+        retention-days: 30

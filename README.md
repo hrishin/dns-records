@@ -1,5 +1,7 @@
 # DNS Records Manager
 
+[![PR Dry-Run](https://github.com/{owner}/{repo}/workflows/DNS%20Records%20Manager%20PR%20Dry-Run/badge.svg)](https://github.com/{owner}/{repo}/actions/workflows/pr-dry-run.yml)
+
 ## Overview
 
 The DNS Records Manager is a comprehensive, enterprise-grade automation solution for managing DNS records in the `ib.bigbank.com` zone. 
