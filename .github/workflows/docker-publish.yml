@@ -4,17 +4,95 @@ on:
   push:
     branches: [ main, master ]
     tags: [ 'v*' ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
     # No inputs needed - just manual trigger
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: hriships/dns-record
 
 jobs:
+  # Integration tests job that runs before publishing
+  integration-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dig dnsutils
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install sops and age
+        run: |
+          # Install sops
+          echo "Installing sops..."
+          curl -L -o sops "https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64"
+          chmod +x sops
+          sudo mv sops /usr/local/bin/
+          
+          # Install age
+          echo "Installing age..."
+          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux.amd64.tar.gz"
+          tar -xzf age.tar.gz
+          sudo mv age/age /usr/local/bin/
+          rm -rf age age.tar.gz
+          
+          echo "Installed versions:"
+          sops --version
+          age --version
+
+      - name: Setup AGE key and decrypt secrets
+        run: |
+          echo "${{ secrets.AGE_KEY }}" > .age-key
+          chmod 600 .age-key
+          export SOPS_AGE_KEY_FILE=.age-key
+          
+          chmod +x scripts/decrypt-update-key.sh
+          ./scripts/decrypt-update-key.sh
+          
+          # Clean up the AGE key
+          rm -f .age-key
+
+      - name: Verify decrypted files
+        run: |
+          echo "Checking decrypted files..."
+          if [ -f "bind/update-key.conf" ]; then
+            echo "update-key.conf is available"
+            ls -la bind/update-key.conf
+          fi
+
+      - name: Run integration tests
+        run: |
+          make test-integration
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-reports
+          path: test_reports/
+          retention-days: 30
+
+  # Build and publish job
   build:
     runs-on: ubuntu-latest
+    needs: integration-tests
     permissions:
       contents: read
       packages: write
@@ -33,7 +111,7 @@ jobs:
           
           # Install age
           echo "Installing age..."
-          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz"
+          curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux.amd64.tar.gz"
           tar -xzf age.tar.gz
           sudo mv age/age /usr/local/bin/
           rm -rf age age.tar.gz
@@ -79,7 +157,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
@@ -91,7 +168,7 @@ jobs:
           context: .
           file: ./Dockerfile.bind
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -101,7 +178,6 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
 
       - name: Build status
-        if: github.event_name == 'pull_request'
         run: |
-          echo "Docker image built successfully for PR #${{ github.event.number }}"
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Docker image built and published successfully!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
