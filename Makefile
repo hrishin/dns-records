@@ -20,9 +20,7 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test             Run all tests"
-	@echo "  test-package     Run package tests"
-	@echo "  test-coverage    Run tests with coverage report"
-	@echo "  test-package-coverage Run package tests with coverage"
+	@echo "  test-integration Run integration tests with behave"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  lint             Run linting checks"
@@ -240,17 +238,6 @@ test-clean:
 	rm -rf htmlcov/
 	rm -rf .coverage
 	rm -f test_dns_manager.log
-
-# Install test dependencies
-test-deps:
-	@echo "Installing test dependencies..."
-	pip install -r requirements.txt
-
-# Run tests with coverage report
-test-coverage: test
-	@echo "Generating coverage report..."
-	coverage html
-	@echo "Coverage report generated in htmlcov/"
 
 # Default help
 .DEFAULT_GOAL := help
