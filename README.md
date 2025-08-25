@@ -248,6 +248,121 @@ graph LR
 <br>
 <br>
 
+### Class Structure
+```mermaid
+classDiagram
+    class DNSManager {
+        +config: dict
+        +provider: DNSProvider
+        +record_manager: RecordManager
+        +run() void
+        +validate_input() bool
+        +process_records() void
+    }
+    
+    class RecordManager {
+        +records: List[Record]
+        +changes: List[Change]
+        +analyze_changes() List[Change]
+        +apply_changes() void
+        +validate_records() bool
+    }
+    
+    class DNSProvider {
+        <<abstract>>
+        +connect() bool
+        +authenticate() bool
+        +update_record() bool
+        +delete_record() bool
+        +create_record() bool
+    }
+    
+    class BINDProvider {
+        +nameserver: str
+        +port: int
+        +key_file: str
+        +zone_file: str
+        +connect() bool
+        +authenticate() bool
+        +update_record() bool
+    }
+    
+    class MockProvider {
+        +records: dict
+        +connect() bool
+        +authenticate() bool
+        +update_record() bool
+    }
+    
+    class CSVParser {
+        +file_path: str
+        +parse() List[Record]
+        +validate_structure() bool
+        +read_file() str
+    }
+    
+    class Record {
+        +fqdn: str
+        +ipv4: str
+        +ttl: int
+        +record_type: str
+        +validate() bool
+        +to_dict() dict
+    }
+    
+    class Change {
+        +action: str
+        +record: Record
+        +old_value: str
+        +new_value: str
+        +apply() bool
+        +rollback() bool
+    }
+    
+    class Validator {
+        <<abstract>>
+        +validate() bool
+    }
+    
+    class FQDNValidator {
+        +validate() bool
+        +is_valid_domain() bool
+        +is_in_zone() bool
+    }
+    
+    class IPv4Validator {
+        +validate() bool
+        +is_valid_ip() bool
+        +is_private_ip() bool
+    }
+    
+    class DNSClient {
+        +provider: DNSProvider
+        +execute_query() dict
+        +execute_update() bool
+    }
+
+    DNSManager --> RecordManager
+    DNSManager --> DNSProvider
+    DNSManager --> CSVParser
+    DNSManager --> Validator
+    
+    RecordManager --> Record
+    RecordManager --> Change
+    
+    DNSProvider <|-- BINDProvider
+    DNSProvider <|-- MockProvider
+    
+    CSVParser --> Record
+    
+    Validator <|-- FQDNValidator
+    Validator <|-- IPv4Validator
+    
+    DNSClient --> DNSProvider
+```
+<br>
+<br>
+
 ### Deployment Flow
 ```mermaid
 sequenceDiagram
