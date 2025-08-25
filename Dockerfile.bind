@@ -20,6 +20,7 @@ RUN mkdir -p /var/cache/bind /var/lib/bind /var/log/named /etc/bind/keys
 # Copy configuration files
 COPY bind/named.conf /etc/bind/named.conf
 COPY bind/zones/ib.bigbank.com.zone /var/lib/bind/ib.bigbank.com.zone
+COPY bind/zones/test.bigbank.com.zone /var/lib/bind/test.bigbank.com.zone
 
 # Note: update-key.conf will be mounted as a volume at runtime
 # This allows for encrypted credential management
