@@ -1,12 +1,11 @@
 # DNS Records Manager
 
 <p align="left">
-  <a href="https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml">
-    <img alt="Main Deploy Status" src="https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml/badge.svg">
+  <a href="https://github.com/hrishin/dns-records/actions/workflows/main-deploy.yml">
+    <img alt="DNS Records Deploy" src="https://github.com/hrishin/dns-records/actions/workflows/main-deploy.yml/badge.svg">
   </a>
-
-  <a href="https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml">
-    <img alt="Docker Build Status" src="https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml/badge.svg">
+  <a href="https://github.com/hrishin/dns-records/actions/workflows/docker-publish.yml">
+    <img alt="Build and Publish Docker Image" src="https://github.com/hrishin/dns-records/actions/workflows/docker-publish.yml/badge.svg">
   </a>
 </p>
 
