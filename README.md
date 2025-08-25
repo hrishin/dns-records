@@ -36,7 +36,7 @@ A comprehensive, enterprise-grade automation solution for managing DNS records i
 # Clone and setup
 git clone <repository-url>
 cd dns-records-manager
-pip install -r requirements.txt
+make install
 
 # Configure
 cp configs/config.example.yaml configs/config.yaml
@@ -188,25 +188,6 @@ logging:
   file: dns_manager.log
 ```
 
-## Encrypted Configuration
-
-The `bind/update-key.conf` file is encrypted using SOPS with age encryption.
-
-### Working with Encrypted Files
-
-```bash
-# Decrypt for editing
-./scripts/decrypt-update-key.sh
-
-# Re-encrypt after changes
-./scripts/encrypt-update-key.sh
-```
-
-### Security Notes
-- Private age key (`.age-key`) is automatically added to `.gitignore`
-- Never commit the private key to version control
-- Public key is stored in `.sops.yaml` for team collaboration
-
 ## CLI Options
 
 - `--csv, -f`: CSV file containing DNS records (required)
@@ -215,6 +196,10 @@ The `bind/update-key.conf` file is encrypted using SOPS with age encryption.
 - `--dry-run`: Show what would be changed without making changes
 - `--verbose, -v`: Enable verbose logging
 - `--output-file`: Save dry-run output to file
+
+## Developmand and Local demo
+
+For detailed local development, testing, and advanced usage instructions, see the [Development Guide](docs/Development.md).
 
 ## Architecture
 
