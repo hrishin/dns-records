@@ -1,0 +1,202 @@
+name: DNS Records Manager Main Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'input.csv'
+
+jobs:
+  dns-deploy:
+    runs-on: ubuntu-latest
+    
+    # Ensure only one deployment runs at a time
+    concurrency:
+      group: dns-deploy
+      cancel-in-progress: false
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install sops and age
+      run: |
+        # Install sops
+        echo "Installing sops..."
+        curl -L -o sops "https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64"
+        chmod +x sops
+        sudo mv sops /usr/local/bin/
+        
+        # Install age
+        echo "Installing age..."
+        curl -L -o age.tar.gz "https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz"
+        echo "Downloaded file size: $(stat -c%s age.tar.gz) bytes"
+        file age.tar.gz
+        tar -xzf age.tar.gz
+        sudo mv age/age /usr/local/bin/
+        rm -rf age age.tar.gz
+        
+        echo "Installed versions:"
+        sops --version
+        age --version
+        
+    - name: Create BIND config for deployment
+      run: |
+        mkdir -p configs
+        cat > configs/config_bind_deploy.yaml << 'EOF'
+        dns_providers:
+          bind:
+            nameserver: 44.216.94.190
+            port: 53
+            key_file: bind/update-key.conf
+            key_name: update-key
+        
+        default_provider: bind
+        
+        logging:
+          level: INFO
+          file: dns_manager_deploy.log
+        EOF
+        
+    - name: Validate CSV file
+      run: |
+        echo "Validating input.csv file..."
+        
+        # Check if CSV file exists
+        if [ ! -f "input.csv" ]; then
+          echo "Error: input.csv file not found"
+          exit 1
+        fi
+        
+        # Check if CSV has content
+        if [ ! -s "input.csv" ]; then
+          echo "Error: input.csv file is empty"
+          exit 1
+        fi
+        
+        # Basic CSV structure validation
+        if ! head -n 1 input.csv | grep -q "FQDN,IPv4"; then
+          echo "Error: input.csv must have header 'FQDN,IPv4'"
+          exit 1
+        fi
+        
+        # Count records (excluding header)
+        record_count=$(tail -n +2 input.csv | wc -l)
+        echo "Found $record_count DNS records in input.csv"
+        
+        if [ $record_count -eq 0 ]; then
+          echo "Warning: No DNS records found in input.csv"
+        fi
+        
+        echo "CSV content preview:"
+        echo "===================="
+        head -n 5 input.csv
+        if [ $record_count -gt 5 ]; then
+          echo "..."
+          echo "Total records: $record_count"
+        fi
+        echo "===================="
+        
+    - name: Deploy DNS records
+      id: deploy
+      run: |
+        echo "${{ secrets.AGE_KEY }}" > .age-key
+        chmod 600 .age-key
+        export SOPS_AGE_KEY_FILE=.age-key
+  
+        # Create output directory
+        mkdir -p deploy-output
+        
+        echo "Starting DNS record deployment..."
+        echo "Zone: ib.bigbank.com"
+        echo "Nameserver: 44.216.94.190"
+        echo "Configuration: BIND Provider"
+        
+        # Run the actual deployment (not dry-run)
+        if python -m dns_records_manager.cli.main \
+          --config configs/config_bind_deploy.yaml \
+          --zone ib.bigbank.com \
+          --csv input.csv \
+          --verbose; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "DNS deployment completed successfully"
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "DNS deployment failed"
+          exit 1
+        fi
+        
+        if [ $? -eq 0 ]; then
+            echo "Creating deployment summary..."
+            {
+            echo "DNS Records Manager Deployment Summary"
+            echo "====================================="
+            echo "Zone: ib.bigbank.com"
+            echo "Nameserver: 44.216.94.190"
+            echo "Configuration: BIND Provider"
+            echo "Status: SUCCESS"
+            echo "Timestamp: $(date -u)"
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo ""
+            echo "Deployment completed successfully."
+            } > deploy-output/deployment-summary.txt
+            
+            # Show summary in GitHub Actions
+            echo "::group::Deployment Summary"
+            cat deploy-output/deployment-summary.txt
+            echo "::endgroup::"
+        fi
+
+        rm -rf .age-key
+
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dns-deployment-results
+        path: |
+          deploy-output/
+          dns_manager_deploy.log
+          configs/config_bind_deploy.yaml
+        retention-days: 90
+        
+    - name: Upload log files
+      uses: actions/upload-artifact@v4
+      with:
+        name: dns-deployment-logs
+        path: |
+          dns_manager_deploy.log
+          deploy-output/
+        retention-days: 90
+        
+    - name: Deployment status
+      run: |
+        echo "DNS Records Manager deployment completed successfully!"
+        echo ""
+        echo "Deployment Summary:"
+        echo "   - Zone: ib.bigbank.com"
+        echo "   - Nameserver: 44.216.94.190"
+        echo "   - Records processed from input.csv"
+        echo "   - Deployment issue created for tracking"
+        echo "   - Artifacts uploaded for review"
+        echo ""
+        echo "Next steps:"
+        echo "   1. Check the created deployment issue"
+        echo "   2. Verify DNS propagation in your environment"
+        echo "   3. Monitor for any DNS resolution issues"

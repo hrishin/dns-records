@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main, master ]
     tags: [ 'v*' ]
+    paths-ignore:
+      - 'input.csv'
   workflow_dispatch:
     # No inputs needed - just manual trigger
 
