@@ -244,7 +244,7 @@ make bind-clean
 ### 1. Integration Tests
 
 > **Note:**  
-> Integration tests run against an existing BIND server instance, which must be running and accessible. The integration environment uses the `test.bigbank.com` zone for testing. The BIND server image is built from this repository and is hosted on AWS for CI and remote testing purposes.
+> Integration tests run against an existing BIND server instance, which must be running and accessible. The integration environment uses the `test.bigbank.com` zone for testing. The BIND server image is built from this repository and is hosted on AWS for CI and remote testing purposes on 44.216.94.190 endpoint port 53.
 
 ```bash
 # Run integration tests (requires decrypted update-key.conf)
