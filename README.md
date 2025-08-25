@@ -147,8 +147,12 @@ raise the the pull requests.
    Go to your repository on GitHub and open a Pull Request (PR) from your branch to `main`.
 
 5. **Wait for CI checks**  
-   The CI will automatically run a dry-run and show the results in your PR. If only `input.csv` was changed
+   The CI will automatically run a dry-run and show the results in your PR. If only `input.csv` was changed.
 
+    Following is an example of change output.
+    <br>
+    ![Dry-run PR Example](docs/images/1-dry-run-pr.png)
+    <br>
 
 6. **Merge after review**  
    Once your PR is approved and checks pass, merge it to apply the DNS changes.
@@ -240,6 +244,8 @@ graph LR
     style I fill:#e8f5e8
     style J fill:#fff3e0
 ```
+<br>
+<br>
 
 ### Deployment Flow
 ```mermaid
@@ -259,9 +265,11 @@ sequenceDiagram
     Note over CI: CI Pipeline Execution
     CI->>Sys: Clone repository
     CI->>Sys: Install dependencies
+    Sys->>Sys: Parse CSV & validate records
+    Sys->>Sys: Analyze DNS changes
     CI->>Sys: Run dry-run validation
     Sys->>CI: Return validation results
-    CI->>GH: Update PR with CI status
+    CI->>GH: Update PR with CI status and diff. result
     
     Note over Dev,GH: PR Review & Approval
     Dev->>GH: Address review comments
@@ -286,6 +294,8 @@ sequenceDiagram
     Dev->>Bind: Query updated DNS records
     Bind->>Dev: Return new record values
 ```
+<br>
+<br>
 
 ## Future Enhancements
 
