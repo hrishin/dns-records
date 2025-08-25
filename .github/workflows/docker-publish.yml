@@ -59,29 +59,16 @@ jobs:
           sops --version
           age --version
 
-      - name: Setup AGE key and decrypt secrets
+      - name: Run integration tests
         run: |
           echo "${{ secrets.AGE_KEY }}" > .age-key
           chmod 600 .age-key
           export SOPS_AGE_KEY_FILE=.age-key
-          
-          chmod +x scripts/decrypt-update-key.sh
-          ./scripts/decrypt-update-key.sh
-          
+
+          make test-integration
+
           # Clean up the AGE key
           rm -f .age-key
-
-      - name: Verify decrypted files
-        run: |
-          echo "Checking decrypted files..."
-          if [ -f "bind/update-key.conf" ]; then
-            echo "update-key.conf is available"
-            ls -la bind/update-key.conf
-          fi
-
-      - name: Run integration tests
-        run: |
-          make test-integration
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
