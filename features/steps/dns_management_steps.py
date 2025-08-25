@@ -38,7 +38,6 @@ def step_impl(context):
 def step_impl(context):
     """Set up a test zone for the scenario."""
     context.zone = context.scenario_zone
-    # For testing purposes, we'll use the main test zone
     context.zone = context.test_zone
 
 
@@ -66,14 +65,12 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Create some initial records
     context.existing_records = [
         {"fqdn": "existing1.test.bigbank.com", "ipv4": "192.168.1.110"},
         {"fqdn": "existing2.test.bigbank.com", "ipv4": "192.168.1.101"},
         {"fqdn": "ns1.test.bigbank.com", "ipv4": "192.168.1.110"},
     ]
     
-    # Add records to DNS
     provider = BINDProvider(context.test_config["dns_providers"]["bind"])
     for record in context.existing_records:
         try:
@@ -83,7 +80,6 @@ def step_impl(context):
         except Exception as e:
             context.scenario.skip(f"Failed to create existing records: {e}")
     
-    # Wait for records to propagate
     time.sleep(1)
 
 
@@ -93,7 +89,6 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Use the test records that should already exist
     context.csv_records = context.test_records.copy()
     context.csv_file = context.test_csv_file
 
@@ -136,7 +131,7 @@ def step_impl(context):
 def step_impl(context):
     """Create a CSV file with many DNS records."""
     context.csv_records = []
-    for i in range(30):  # Create 100 records
+    for i in range(30):
         context.csv_records.append({
             "fqdn": f"bulk{i:03d}.test.bigbank.com",
             "ipv4": f"192.168.{i//256}.{i%256}"
@@ -160,16 +155,13 @@ def step_impl(context):
         context.scenario.skip("BIND DNS server is not running")
     
     try:
-        # Parse CSV file
         parser = CSVParser(str(context.csv_file))
         records = parser.parse()
         
-        # Process records
         context.result = context.dns_manager.process_records(
             records, context.zone, dry_run=False
         )
         
-        # Wait for DNS propagation
         time.sleep(2)
         
     except Exception as e:
@@ -183,7 +175,6 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Create updated records with new IPs
     context.updated_records = [
         {"fqdn": "existing1.test.bigbank.com", "ipv4": "192.168.1.200"},
         {"fqdn": "existing2.test.bigbank.com", "ipv4": "192.168.1.201"},
@@ -215,8 +206,7 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Create CSV with fewer records (simulating deletion)
-    context.remaining_records = [context.existing_records[0]]  # Keep only first record
+    context.remaining_records = [context.existing_records[0]]
     
     context.csv_file = context.test_data_dir / "remaining_records.csv"
     with open(context.csv_file, 'w', newline='') as f:
@@ -309,7 +299,6 @@ def step_impl(context):
         context.scenario.skip("BIND DNS server is not running")
     
     try:
-        # Test basic DNS operations
         parser = CSVParser(str(context.csv_file))
         records = parser.parse()
         context.result = context.dns_manager.process_records(
@@ -329,7 +318,6 @@ def step_impl(context):
     context.test_config["dns_providers"]["bind"]["nameserver"] = "192.168.255.255"
     
     try:
-        # Create new DNS manager with unreachable config
         unreachable_manager = DNSManager(context.test_config)
         parser = CSVParser(str(context.csv_file))
         records = parser.parse()
@@ -374,7 +362,6 @@ def step_impl(context):
     
     def update_records(thread_id):
         try:
-            # Create thread-specific records
             thread_records = [
                 {"fqdn": f"concurrent{thread_id}.test.bigbank.com", "ipv4": f"192.168.{thread_id}.100"},
                 {"fqdn": "ns1.test.bigbank.com", "ipv4": "192.168.1.110"}
@@ -393,7 +380,6 @@ def step_impl(context):
         except Exception as e:
             return False
     
-    # Start multiple threads
     threads = []
     results = []
     
@@ -402,7 +388,6 @@ def step_impl(context):
         threads.append(thread)
         thread.start()
     
-    # Wait for all threads to complete
     for thread in threads:
         thread.join()
     
@@ -466,8 +451,7 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Check that removed records are no longer resolvable
-    removed_record = context.existing_records[1]  # This should have been removed
+    removed_record = context.existing_records[1]
     
     try:
         resolver = dns.resolver.Resolver()
@@ -477,10 +461,8 @@ def step_impl(context):
         resolver.resolve(removed_record["fqdn"], "A")
         assert False, f"Removed record {removed_record['fqdn']} is still resolvable"
     except dns.resolver.NXDOMAIN:
-        # Expected - record should not exist
         pass
     except Exception as e:
-        # Other errors might indicate the record still exists
         assert False, f"Unexpected error checking removed record: {e}"
 
 
@@ -524,21 +506,18 @@ def step_impl(context):
 @then("I should see a summary of proposed changes")
 def step_impl(context):
     """Verify that a summary of proposed changes was displayed."""
-    # In dry run mode, the operation should succeed without making changes
     assert context.result is True
 
 
 @then("invalid records should be skipped")
 def step_impl(context):
     """Verify that invalid records were skipped."""
-    # The operation should still succeed even with invalid records
     assert context.result is True
 
 
 @then("valid records should be processed successfully")
 def step_impl(context):
     """Verify that valid records were processed successfully."""
-    # Check that at least one valid record was processed
     valid_records = [r for r in context.csv_records if r["fqdn"] and r["ipv4"] and "." in r["fqdn"]]
     
     if valid_records:
@@ -574,15 +553,12 @@ def step_impl(context):
 @then("the operations should be authenticated using the TSIG key")
 def step_impl(context):
     """Verify that operations were authenticated using the TSIG key."""
-    # TSIG authentication is handled at the BIND provider level
-    # If we get here without errors, authentication was successful
     assert context.result is True
 
 
 @then("the operations should fail gracefully")
 def step_impl(context):
     """Verify that operations failed gracefully."""
-    # Operations should fail but not crash
     assert context.result is False or hasattr(context, 'error')
 
 
@@ -596,7 +572,6 @@ def step_impl(context):
 def step_impl(context):
     """Verify that the operation completed within reasonable time."""
     processing_time = getattr(context, 'processing_time', 0)
-    # 100 records should complete within 30 seconds
     assert processing_time < 30, f"Bulk processing took too long: {processing_time} seconds"
 
 
@@ -609,7 +584,6 @@ def step_impl(context):
 @then("the DNS zone should remain consistent")
 def step_impl(context):
     """Verify that the DNS zone remained consistent after concurrent operations."""
-    # Check that all concurrent records are resolvable
     for i in range(3):
         fqdn = f"concurrent{i}.test.bigbank.com"
         expected_ip = f"192.168.{i}.100"

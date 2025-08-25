@@ -70,12 +70,10 @@ class BINDProvider(DNSProvider):
     def _parse_bind_key_file(self, key_content: str, key_name: str) -> Optional[str]:
         """Parse BIND key file format to extract the secret for a specific key."""
         try:
-            # Look for the key block that matches the key_name
             key_pattern = rf'key\s+"{re.escape(key_name)}"\s*{{(.*?)}}'
             match = re.search(key_pattern, key_content, re.DOTALL)
             if match:
                 key_block = match.group(1)
-                # Extract the secret from the key block
                 secret_match = re.search(r'secret\s+"([^"]+)"', key_block)
                 if secret_match:
                     return secret_match.group(1)

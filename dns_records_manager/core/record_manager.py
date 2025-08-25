@@ -41,7 +41,6 @@ class RecordHandler:
         """
         logger.info("Analyzing DNS record changes...")
 
-        # Convert current_records to standard format if it's a dictionary
         if isinstance(current_records, dict):
             current_records = self._dict_to_records_list(current_records)
         elif not isinstance(current_records, list):
@@ -49,61 +48,49 @@ class RecordHandler:
                 "current_records must be either a list of dictionaries or a dictionary"
             )
 
-        # Create sets for efficient comparison
         current_set = self._records_to_set(current_records)
         desired_set = self._records_to_set(desired_records)
 
-        # Validate zone safety
         self._validate_zone_safety(current_records, desired_records, zone)
 
-        # Analyze changes
         creates = []
         updates = []
         deletes = []
         no_changes = []
 
-        # Find records to create or update
         for desired in desired_records:
             desired_key = (desired["fqdn"], desired["ipv4"])
 
             if desired_key not in current_set:
-                # Check if this is an update or create
                 existing_record = self._find_existing_record(
                     current_records, desired["fqdn"]
                 )
 
                 if existing_record:
-                    # Record exists but IP is different - update
                     updates.append(desired)
                     logger.info(
                         f"Update needed: {desired['fqdn']} {existing_record['ipv4']} -> {desired['ipv4']}"
                     )
                 else:
-                    # Record doesn't exist - create
                     creates.append(desired)
                     logger.info(
                         f"Create needed: {desired['fqdn']} -> {desired['ipv4']}"
                     )
             else:
-                # Record exists and is identical - no change
                 no_changes.append(desired)
                 logger.info(f"No change needed: {desired['fqdn']} -> {desired['ipv4']}")
 
-        # Find records to delete (records in current but not in desired)
         for current in current_records:
             current_key = (current["fqdn"], current["ipv4"])
 
-            # Only consider records that are in the target zone
             if self._is_in_zone(current["fqdn"], zone):
                 if current_key not in desired_set:
-                    # Check if this FQDN is completely removed from desired records
                     if not self._fqdn_in_desired(current["fqdn"], desired_records):
                         deletes.append(current)
                         logger.info(
                             f"Delete needed: {current['fqdn']} -> {current['ipv4']}"
                         )
 
-        # Calculate totals
         total_changes = len(creates) + len(updates) + len(deletes)
 
         changes = {
@@ -134,7 +121,6 @@ class RecordHandler:
 
     def _find_existing_record(self, current_records, fqdn: str) -> Dict:
         """Find an existing record by FQDN."""
-        # Ensure current_records is in list format
         if isinstance(current_records, dict):
             current_records = self._dict_to_records_list(current_records)
 
@@ -167,12 +153,10 @@ class RecordHandler:
         """Validate that operations are safe for the specified zone."""
         logger.info(f"Validating zone safety for zone: {zone}")
 
-        # Check that all desired records are within the zone
         for record in desired_records:
             if not self._is_in_zone(record["fqdn"], zone):
                 raise ValueError(f"FQDN '{record['fqdn']}' is not within zone '{zone}'")
 
-        # Check for any records that might be outside the zone
         for record in current_records:
             if not self._is_in_zone(record["fqdn"], zone):
                 logger.warning(
@@ -182,8 +166,6 @@ class RecordHandler:
 
     def _get_last_updated(self, records) -> str:
         """Get the last updated timestamp from records (if available)."""
-        # This is a placeholder - actual implementation would depend on
-        # the DNS provider's ability to provide timestamps
         return "Unknown"
 
     def get_change_impact(self, changes: Dict) -> Dict:
@@ -195,7 +177,6 @@ class RecordHandler:
             "rollback_complexity": "LOW",
         }
 
-        # Assess risk level
         if changes["deletes"]:
             impact["risk_level"] = "MEDIUM"
             impact["affected_services"] = [
@@ -214,12 +195,11 @@ class RecordHandler:
 
         if changes["creates"]:
             if impact["risk_level"] == "LOW":
-                impact["risk_level"] = "LOW"  # Creates are generally safe
+                impact["risk_level"] = "LOW"
             impact["affected_services"].extend(
                 [f"New DNS resolution for {r['fqdn']}" for r in changes["creates"]]
             )
 
-        # Remove duplicates
         impact["affected_services"] = list(set(impact["affected_services"]))
 
         return impact

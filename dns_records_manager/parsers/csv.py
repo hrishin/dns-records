@@ -26,7 +26,6 @@ class CSVParser:
                     fqdn = row["FQDN"].strip()
                     ipv4 = row["IPv4"].strip()
 
-                    # Validate FQDN and IPv4
                     if not validate_fqdn(fqdn):
                         logger.warning(
                             f"Invalid FQDN '{fqdn}' at row {row_num}, skipping"

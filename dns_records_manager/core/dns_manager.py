@@ -17,7 +17,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ..providers.dns_client import DNSClient
 from .record_manager import RecordHandler
 
-# Initialize rich console and logger
 console = Console()
 logger = logging.getLogger(__name__)
 
@@ -50,12 +49,10 @@ class DNSManager:
                 f"[blue]Found {len(current_records)} existing DNS records[/blue]"
             )
 
-            # Analyze changes
             changes = self.record_handler.analyze_changes(
                 current_records, records, zone
             )
 
-            # Display changes summary
             self._display_changes_summary(changes)
 
             if dry_run:
@@ -98,7 +95,6 @@ class DNSManager:
         console.print(f"\n[bold]DNS changes summary:[/bold]")
         console.print(f"\n[bold]Total {changes['total_changes']} DNS changes[/bold]")
 
-        # Show detailed changes
         if changes.get("creates", []):
             console.print(f"\nTotal creates: {len(changes['creates'])}")
             console.print("[green]Records to create:[/green]")
@@ -137,7 +133,6 @@ class DNSManager:
         ) as progress:
             task = progress.add_task("Applying DNS changes...", total=total_changes)
 
-            # Apply creates
             for record in changes["creates"]:
                 try:
                     self.dns_client.create_record(zone, record)
@@ -148,7 +143,6 @@ class DNSManager:
                     logger.error(f"Failed to create record {record['fqdn']}: {e}")
                     console.print(f"[red]Failed to create {record['fqdn']}: {e}[/red]")
 
-            # Apply updates
             for record in changes["updates"]:
                 try:
                     self.dns_client.update_record(zone, record)
@@ -159,7 +153,6 @@ class DNSManager:
                     logger.error(f"Failed to update record {record['fqdn']}: {e}")
                     console.print(f"[red]Failed to update {record['fqdn']}: {e}[/red]")
 
-            # Apply deletes
             for record in changes["deletes"]:
                 try:
                     self.dns_client.delete_record(zone, record)

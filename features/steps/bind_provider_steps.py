@@ -59,7 +59,6 @@ def step_impl(context):
         context.scenario.skip("BIND DNS server is not running")
     
     try:
-        # Create the record using BIND provider
         record = {
             "fqdn": context.new_record["fqdn"],
             "ipv4": context.new_record["ipv4"],
@@ -71,7 +70,6 @@ def step_impl(context):
         )
         context.create_success = True
         
-        # Wait for DNS propagation
         time.sleep(2)
         
     except Exception as e:
@@ -224,10 +222,8 @@ def step_impl(context):
         resolver.resolve(context.existing_record["fqdn"], "A")
         assert False, f"Deleted record {context.existing_record['fqdn']} is still resolvable"
     except dns.resolver.NXDOMAIN:
-        # Expected - record should not exist
         pass
     except Exception as e:
-        # Other errors might indicate the record still exists
         assert False, f"Unexpected error checking deleted record: {e}"
 
 
@@ -237,7 +233,6 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Create some test records
     context.test_zone_records = [
         {"fqdn": "zone1.test.bigbank.com", "ipv4": "192.168.1.101"},
         {"fqdn": "zone2.test.bigbank.com", "ipv4": "192.168.1.102"},
@@ -298,7 +293,6 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Verify the record was created
     try:
         resolver = dns.resolver.Resolver()
         resolver.nameservers = [context.test_nameserver]
@@ -330,14 +324,12 @@ def step_impl(context):
 @then("the operations should fail gracefully with invalid zone")
 def step_impl(context):
     """Verify that operations failed gracefully."""
-    # Operations should fail but not crash
     assert not context.invalid_zone_success, "Operations should fail with invalid zone"
 
 
 @then("appropriate error messages should be shown for invalid zone")
 def step_impl(context):
     """Verify that appropriate error messages were shown."""
-    # Error should be captured
     assert hasattr(context, 'invalid_zone_error'), "Error should be captured"
 
 
@@ -347,9 +339,8 @@ def step_impl(context):
     if not context.bind_running:
         context.scenario.skip("BIND DNS server is not running")
     
-    # Create many test records
     context.many_records = []
-    for i in range(50):  # Create 50 records
+    for i in range(50):
         record = {
             "fqdn": f"bulk{i:03d}.test.bigbank.com",
             "ipv4": f"192.168.{i//256}.{i%256}"
@@ -398,5 +389,4 @@ def step_impl(context):
 def step_impl(context):
     """Verify that the operation completed within reasonable time."""
     bulk_time = getattr(context, 'bulk_time', 0)
-    # 50 records should complete within 10 seconds
     assert bulk_time < 10, f"Bulk retrieval took too long: {bulk_time} seconds"

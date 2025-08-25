@@ -10,7 +10,6 @@ import time
 import logging
 from pathlib import Path
 
-# Configure logging for tests
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,6 @@ def before_all(context):
     context.test_nameserver = "44.216.94.190"
     context.test_port = 53
     
-    # Create test configuration
     context.test_config = {
         "dns_providers": {
             "bind": {
@@ -43,24 +41,20 @@ def before_all(context):
         }
     }
     
-    # Create test config file
     context.test_config_file = context.test_data_dir / "test_config.yaml"
     with open(context.test_config_file, 'w') as f:
         yaml.dump(context.test_config, f)
     
-    # Test records for various scenarios
     context.test_records = [
         {"fqdn": "ns1.test.bigbank.com", "ipv4": "192.168.1.110"}
     ]
     
-    # Create test CSV file
     context.test_csv_file = context.test_data_dir / "test_records.csv"
     with open(context.test_csv_file, 'w') as f:
         f.write("FQDN,IPv4\n")
         for record in context.test_records:
             f.write(f"{record['fqdn']},{record['ipv4']}\n")
     
-    # Check if BIND is running
     context.bind_running = _check_bind_running(context.test_nameserver, context.test_port)
     if not context.bind_running:
         logger.warning("BIND DNS server is not running. Some tests may fail.")
@@ -73,7 +67,6 @@ def before_scenario(context, scenario):
     context.scenario_name = scenario.name
     context.current_records = []
     
-    # Create a unique test zone for each scenario
     context.scenario_zone = f"{scenario.name.lower().replace(' ', '_')}.{context.test_zone}"
     
     logger.info(f"Starting scenario: {scenario.name}")
@@ -82,7 +75,6 @@ def before_scenario(context, scenario):
 def after_scenario(context, scenario):
     """Clean up after each test scenario."""
     try:
-        # Clean up test records if BIND is running
         if context.bind_running and hasattr(context, 'dns_manager'):
             _cleanup_test_records(context)
     except Exception as e:
@@ -94,7 +86,6 @@ def after_scenario(context, scenario):
 def after_all(context):
     """Clean up test environment after all tests."""
     try:
-        # Remove test files
         if context.test_data_dir.exists():
             import shutil
             shutil.rmtree(context.test_data_dir)
@@ -114,8 +105,7 @@ def _check_bind_running(nameserver: str, port: int) -> bool:
         resolver.timeout = 2
         resolver.lifetime = 2
         
-        # Try to resolve a simple query
-        resolver.resolve("api.ib.bigbank.com", "A")
+        resolver.resolve("ns1.test.bigbank.com", "A")
         return True
     except Exception:
         return False
@@ -127,7 +117,6 @@ def _cleanup_test_records(context):
         from dns_records_manager.core.dns_manager import DNSManager
         from dns_records_manager.providers.bind_provider import BINDProvider
         
-        # Create a minimal config for cleanup
         cleanup_config = {
             "dns_providers": {
                 "bind": {
@@ -140,11 +129,9 @@ def _cleanup_test_records(context):
             "default_provider": "bind"
         }
         
-        # Remove test records
         provider = BINDProvider(cleanup_config["dns_providers"]["bind"])
         for record in context.test_records:
             try:
-                # Create update to remove record
                 update = dns.update.Update(context.scenario_zone, keyring=provider.keyring)
                 update.delete(record["fqdn"], "A")
                 dns.query.tcp(update, context.test_nameserver, port=context.test_port)
