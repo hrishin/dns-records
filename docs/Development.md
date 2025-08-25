@@ -366,16 +366,6 @@ make run-dry-run
 make test-integration
 ```
 
-## Environment Variables
-
-You can set these environment variables for development:
-
-```bash
-export DNS_MANAGER_DEBUG=1
-export DNS_MANAGER_LOG_LEVEL=DEBUG
-export DNS_MANAGER_CONFIG_PATH=configs/config_dev.yaml
-```
-
 ## Next Steps
 
 - Review the [Architecture section](../README.md#architecture) in the main README
