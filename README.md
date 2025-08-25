@@ -403,6 +403,7 @@ sequenceDiagram
 - DNSSEC support
 - Geographic routing
 - Load balancing integration
-- REST API service
+- REST API service for DNS management over the CSC file
 - Configuration management tools integration
 - Monitoring systems integration
+- Supporting differnt DNS records types
