@@ -1,9 +1,9 @@
 #!/bin/bash
+
 # Integration test runner for DNS Records Manager
 
 set -e
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -17,13 +17,11 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 echo -e "${BLUE}DNS Records Manager - Integration Test Runner${NC}"
 echo "=================================================="
 
-# Check if we're in the right directory
 if [[ ! -f "$PROJECT_DIR/setup.py" ]]; then
     echo -e "${RED}Error: Please run this script from the project root directory${NC}"
     exit 1
 fi
 
-# Check if virtual environment exists
 if [[ ! -d "$PROJECT_DIR/venv" ]]; then
     echo -e "${YELLOW}Virtual environment not found. Creating one...${NC}"
     python3 -m venv "$PROJECT_DIR/venv"
@@ -33,7 +31,6 @@ fi
 echo -e "${BLUE}Activating virtual environment...${NC}"
 source "$PROJECT_DIR/venv/bin/activate"
 
-# Install/upgrade dependencies
 echo -e "${BLUE}Installing/upgrading dependencies...${NC}"
 pip install --upgrade pip
 pip install -r "$PROJECT_DIR/requirements.txt"
@@ -43,16 +40,12 @@ echo -e "${BLUE}Setting up test environment...${NC}"
 mkdir -p "$PROJECT_DIR/test_data"
 mkdir -p "$PROJECT_DIR/test_reports"
 
-# Set environment variables
-export PYTHONPATH="$PROJECT_DIR:$PYTHONPATH"
-
 # Run integration tests
 echo -e "${BLUE}Running integration tests...${NC}"
 cd "$PROJECT_DIR"
 
 echo -e "${GREEN}Running full integration test suite...${NC}"
 behave -f pretty -v --outfile test_reports/integration_tests.txt
-
 
 if [[ $? -eq 0 ]]; then
     echo -e "${GREEN}All integration tests passed!${NC}"

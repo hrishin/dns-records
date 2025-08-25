@@ -40,14 +40,12 @@ class DNSManager:
         """Process DNS records."""
         try:
             if not records:
-                console.print("[red]No valid records provided[/red]")
+                logger.error("No valid records provided")
                 return False
 
-            console.print(f"[green]Fetching current DNS records...[/green]")
+            logger.info(f"Fetching current DNS records for zone {zone}")
             current_records = self.dns_client.get_records(zone)
-            console.print(
-                f"[blue]Found {len(current_records)} existing DNS records[/blue]"
-            )
+            logger.info(f"Found {len(current_records)} existing DNS records")
 
             changes = self.record_handler.analyze_changes(
                 current_records, records, zone
