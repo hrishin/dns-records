@@ -1,74 +1,64 @@
 # DNS Records Manager
 
-[![Main Deploy](https://github.com/hriships/dns-records-manager/workflows/DNS%20Records%20Manager%20Main%20Deploy/badge.svg)](https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml)
-[![Docker Build](https://github.com/hriships/dns-records-manager/workflows/Build%20and%20Publish%20Docker%20Image/badge.svg)](https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml)
+<p align="left">
+  <a href="https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml">
+    <img alt="Main Deploy Status" src="https://github.com/hriships/dns-records-manager/actions/workflows/main-deploy.yml/badge.svg">
+  </a>
+
+  <a href="https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml">
+    <img alt="Docker Build Status" src="https://github.com/hriships/dns-records-manager/actions/workflows/docker-publish.yml/badge.svg">
+  </a>
+</p>
+
 
 ## Overview
 
-The DNS Records Manager is a comprehensive, enterprise-grade automation solution for managing DNS records in the `ib.bigbank.com` zone. 
-The system provides idempotent, safe, and auditable DNS record management through CSV file input, ensuring that even 
-small mistakes in DNS records cannot have significant consequences.
+A comprehensive, enterprise-grade automation solution for managing DNS records in the `ib.bigbank.com` zone. Provides idempotent, safe, and auditable DNS record management through CSV file input.
 
 ## Key Features
 
-### Safety & Reliability
 - **Idempotent Operations**: Only updates records that have actually changed
 - **Zone Protection**: Never modifies records outside the specified zone
 - **Dry Run Mode**: Preview all changes before applying them
-- **Comprehensive Validation**: FQDN and IPv4 format validation
-- **Rollback Support**: Ability to revert changes if needed
-
-### Automation & Efficiency
 - **CSV Input Processing**: Simple CSV format with FQDN and IPv4 columns
-- **Batch Operations**: Process multiple records efficiently
-- **Change Analysis**: Intelligent detection of what needs to be created, updated, or deleted
-- **Progress Tracking**: Real-time progress indicators and detailed logging
-
-### Multi DNS Provider Support
-- **BIND**: Traditional DNS server integration using dig and nsupdate
-- **Mock Provider**: Safe testing and demonstration without affecting production
-- **Extensible Architecture**: Easy to add new DNS providers
-
-### Monitoring & Audit
+- **Multi Provider Support**: BIND, Mock provider, and extensible architecture
 - **Comprehensive Logging**: Detailed audit trail of all operations
-- **Change Impact Analysis**: Risk assessment and affected services identification
-- **Performance Metrics**: API response times and operation statistics
-- **Health Checks**: System health monitoring and alerting
 
-## System Architecture
+### Prerequisites
+- Python 3.8+
+- SOPS: `brew install sops`
+- Age: `brew install age`
 
+### Installation
+
+```bash
+# Clone and setup
+git clone <repository-url>
+cd dns-records-manager
+pip install -r requirements.txt
+
+# Configure
+cp configs/config.example.yaml configs/config.yaml
+# Edit configs/config.yaml with your settings
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           DNS Records Manager                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────┐  │
-│  │   CSV Parser    │    │  Record Manager │    │     DNS Client          │  │
-│  │                 │    │                 │    │                         │  │
-│  │ • Parse CSV     │───▶│ • Analyze       │───▶│ • Unified Interface     │  │
-│  │ • Validate      │    │   Changes       │    │ • Provider Selection    │  │
-│  │ • Sanitize      │    │ • Zone Safety   │    │ • Error Handling        │  │
-│  │                 │    │ • Idempotency   │    │                         │  │
-│  └─────────────────┘    └─────────────────┘    └─────────────────────────┘  │
-│           │                       │                       │                 │
-│           │                       │                       │                 │
-│           ▼                       ▼                       ▼                 │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────────┐  │
-│  │   Validators    │    │  Change Impact  │    │   DNS Providers         │  │
-│  │                 │    │   Analysis      │    │                         │  │
-│  │ • FQDN          │    │ • Risk Level    │    │ • BIND (Traditional)    │  │
-│  │ • IPv4          │    │ • Affected      │    │ • Mock (Testing)        │  │
-│  │ • CSV Structure │    │   Services      │    │ • AWS R53(extendible)   │  │
-│  │                 │    │ • Rollback      │    │                         │  │
-│  │                 │    │                 │    │                         │  │
-│  └─────────────────┘    └─────────────────┘    └─────────────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+### Basic Usage
+
+```bash
+# Process DNS records
+python main.py --csv input.csv --zone ib.bigbank.com
+
+# Preview changes (dry run)
+python main.py --csv input.csv --zone ib.bigbank.com --dry-run
+
+# Install and use as command
+pip install -e .
+dns-manager --csv input.csv --zone ib.bigbank.com
 ```
 
 ## Input Format
 
-The system accepts a simple CSV file with the exact structure specified in the requirements:
+The system accepts a CSV file with FQDN and IPv4 columns:
 
 ```csv
 FQDN,IPv4
@@ -78,127 +68,101 @@ db.ib.bigbank.com,10.33.0.50
 netapp1.svm.ib.bigbank.com,192.168.47.11
 ```
 
-## How It Works
+## User Guide - Updating UP Addresses 
 
-### 1. CSV Processing
-- Validates CSV structure and content
-- Ensures FQDN and IPv4 format compliance
-- Handles edge cases and provides clear error messages
+To update DNS records in the DNS system, follow the steps below:
 
-### 2. Change Analysis
-- Compares current DNS state with desired state
-- Identifies records to create, update, or delete
-- Ensures zone boundary safety
+### 1. Checkout the `main` branch and pull the latest ccode
 
-### 3. Idempotent Operations
-- **Create**: Only if record doesn't exist
-- **Update**: Only if IP address changed
-- **Delete**: Only if FQDN removed from desired state
-- **No Change**: Skip if identical
+To ensure you are working with the latest code before making changes, follow these steps:
 
-### 4. Safe Execution
-- Dry-run mode for preview
-- Comprehensive logging and audit trail
+1. **Checkout the `main` branch**  
+   ```bash
+   git checkout main
+   ```
 
-## Encrypted Configuration Files
+2. **Pull the latest changes from the remote repository**  
+   ```bash
+   git pull origin main
+   ```
 
-The `bind/update-key.conf` file contains sensitive DNS update keys and is encrypted using SOPS with age encryption for security.
+3. **Create a new branch for your update** 
 
-### Prerequisites
-- **SOPS**: Install with `brew install sops`
-- **Age**: Install with `brew install age`
+   Replace `your-branch` with a descriptive branch name:
+   ```bash
+   git checkout -b your-branch
+   ```
 
-### Working with Encrypted Files
+You are now ready to make changes to `input.csv` to make DNS records changes.
 
-#### Decrypt for editing:
-```bash
-./scripts/decrypt-update-key.sh
+
+### 2. Modify the CSV File
+Edit `input.csv` to reflect the new UP addresses:
+
+User could Add, Edit or Delete records.
+
+```csv
+FQDN,IPv4
+up1.ib.bigbank.com,192.168.1.100
+up2.ib.bigbank.com,192.168.1.101
+up3.ib.bigbank.com,192.168.1.102
 ```
 
-#### Re-encrypt after changes:
-```bash
-./scripts/encrypt-update-key.sh
-```
-
-#### Manual operations:
-```bash
-# Decrypt
-SOPS_AGE_KEY_FILE=.age-key sops -d -i bind/update-key.conf
-
-# Encrypt
-SOPS_AGE_KEY_FILE=.age-key sops -e -i bind/update-key.conf
-```
-
-### Security Notes
-- The private age key (`.age-key`) is automatically added to `.gitignore`
-- Never commit the private key to version control
-- The public key is stored in `.sops.yaml` for team collaboration
-- All team members can decrypt using their own age keys
-
-
-### Prerequisites
-- Python 3.8+
-- Access to DNS provider API (BIND)
-- Required environment variables or configuration files
-
-### Installation
+### 3. Validate Changes
+Run a dry-run to preview what will be updated:
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd dns-records-manager
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure your DNS provider credentials
-cp configs/config.example.yaml configs/config.yaml
-# Edit configs/config.yaml with your settings
-```
-
-### Usage
-
-The DNS Records Manager can be run in several ways:
-
-#### Method 1: Direct Python execution
-```bash
-# Process a CSV file
-python main.py --csv input.csv --zone ib.bigbank.com
-
-# Dry run to preview changes
 python main.py --csv input.csv --zone ib.bigbank.com --dry-run
-
-# Dry run with output saved to file
-python main.py --csv input.csv --zone ib.bigbank.com --dry-run --output-file changes.txt
-
-# Use custom configuration file
-python main.py --csv input.csv --zone ib.bigbank.com --config my-config.yaml
-
-# Enable verbose logging
-python main.py --csv input.csv --zone ib.bigbank.com --verbose
 ```
 
-#### Method 2: After installation (recommended)
+### 4. Apply Changes
+Execute the updates commite the change to your branch,
+raise the the pull requests.
+
+#### Committing and Pushing Changes
+
+1. **Stage your changes**  
+
+   Make sure you have saved your edits to `input.csv` (and any other files you changed):
+
+   ```bash
+   git add input.csv
+   ```
+
+2. **Commit your changes**  
+   Write a clear commit message describing your update:
+
+   ```bash
+   git commit -m "Update UP addresses in input.csv"
+   ```
+
+3. **Push your branch**  
+   Push your branch to the remote repository (replace `your-branch` with your branch name):
+
+   ```bash
+   git push origin your-branch
+   ```
+
+4. **Open a Pull Request**  
+   Go to your repository on GitHub and open a Pull Request (PR) from your branch to `main`.
+
+5. **Wait for CI checks**  
+   The CI will automatically run a dry-run and show the results in your PR. If only `input.csv` was changed
+
+
+6. **Merge after review**  
+   Once your PR is approved and checks pass, merge it to apply the DNS changes.
+
+   You can view the deployment workflow here: [Main Deploy GitHub Action](.github/workflows/main-deploy.yml)
+
+
+### 5. Verify Updates
+Check that the DNS records have been updated correctly:
+
 ```bash
-# Install the package
-pip install -e .
-
-# Use the installed command
-dns-manager --csv input.csv --zone ib.bigbank.com
-
-# Dry run to preview changes
-dns-manager --csv input.csv --zone ib.bigbank.com --dry-run
-
-# Dry run with output saved to file
-dns-manager --csv input.csv --zone ib.bigbank.com --dry-run --output-file changes.txt
+dig up1.ib.bigbank.com
+dig up2.ib.bigbank.com
 ```
-
-#### CLI Options
-- `--csv, -f`: CSV file containing DNS records (required)
-- `--zone, -z`: DNS zone to manage (required)
-- `--config, -c`: Configuration file path (default: configs/config.yaml)
-- `--dry-run`: Show what would be changed without making changes
-- `--verbose, -v`: Enable verbose logging
 
 ## Configuration
 
@@ -207,11 +171,11 @@ Create a `config.yaml` file with your DNS provider settings:
 ```yaml
 dns_providers:
   bind:
-    nameserver: 192.168.1.10  # BIND server IP address
-    port: 53                  # DNS port (default: 53)
-    key_file: /etc/bind/rndc.key  # Optional: RNDC key file for authenticated updates
-    key_name: rndc-key        # Optional: Key name for authenticated updates
-    zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Optional: Zone file path
+    nameserver: 192.168.1.10
+    port: 53
+    key_file: /etc/bind/rndc.key
+    key_name: rndc-key
+    zone_file: /etc/bind/zones/ib.bigbank.com.zone
 
 default_provider: bind
 logging:
@@ -219,41 +183,115 @@ logging:
   file: dns_manager.log
 ```
 
-## Security Features
+## Encrypted Configuration
 
-### Authentication & Authorization
-- BIND key-based authentication
+The `bind/update-key.conf` file is encrypted using SOPS with age encryption.
 
-### Data Protection
-- Secure credential storage using sops
-- Environment variable support
+### Working with Encrypted Files
 
-### Compliance & Audit
-- Change tracking and documentation
-- Security audit trails
+```bash
+# Decrypt for editing
+./scripts/decrypt-update-key.sh
+
+# Re-encrypt after changes
+./scripts/encrypt-update-key.sh
+```
+
+### Security Notes
+- Private age key (`.age-key`) is automatically added to `.gitignore`
+- Never commit the private key to version control
+- Public key is stored in `.sops.yaml` for team collaboration
+
+## CLI Options
+
+- `--csv, -f`: CSV file containing DNS records (required)
+- `--zone, -z`: DNS zone to manage (required)
+- `--config, -c`: Configuration file path (default: configs/config.yaml)
+- `--dry-run`: Show what would be changed without making changes
+- `--verbose, -v`: Enable verbose logging
+- `--output-file`: Save dry-run output to file
+
+## Architecture
+
+### Service components
+```mermaid
+graph LR
+    A[CSV Input] --> B[CSV Parser]
+    B --> C[Validators]
+    C --> D[Record Manager]
+    D --> E[Change Analysis]
+    E --> F[DNS Client]
+    F --> G[Unified Interface]
+    G --> H[DNS Providers]
+    
+    H --> I[BIND Provider]
+    H --> J[Mock Provider]
+    
+    C --> K[FQDN Validation]
+    C --> L[IPv4 Validation]
+    C --> M[CSV Structure Validation]
+    
+    E --> N[Create Records]
+    E --> O[Update Records]
+    E --> P[Delete Records]
+    
+    style A fill:#e1f5fe
+    style H fill:#f3e5f5
+    style I fill:#e8f5e8
+    style J fill:#fff3e0
+```
+
+### Deployment Flow
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant GH as GitHub
+    participant CI as CI/CD Pipeline
+    participant Sys as DNS Manager System
+    participant Bind as BIND Server
+    
+    Note over Dev,Bind: Pull Request Workflow
+    
+    Dev->>GH: Push changes to branch
+    Dev->>GH: Create Pull Request
+    GH->>CI: Trigger CI checks
+    
+    Note over CI: CI Pipeline Execution
+    CI->>Sys: Clone repository
+    CI->>Sys: Install dependencies
+    CI->>Sys: Run dry-run validation
+    Sys->>CI: Return validation results
+    CI->>GH: Update PR with CI status
+    
+    Note over Dev,GH: PR Review & Approval
+    Dev->>GH: Address review comments
+    GH->>Dev: Approve PR
+    Dev->>GH: Merge PR to main
+    
+    Note over CI,Bind: Production Deployment
+    GH->>CI: Trigger main-deploy workflow
+    CI->>Sys: Clone main branch
+    CI->>Sys: Install dependencies
+    CI->>Sys: Process input.csv
+    Sys->>Sys: Parse CSV & validate records
+    Sys->>Sys: Analyze DNS changes
+    Sys->>Bind: Connect to BIND server
+    Sys->>Bind: Authenticate with update key
+    Sys->>Bind: Apply DNS record changes
+    Bind->>Sys: Confirm record updates
+    Sys->>CI: Return deployment results
+    CI->>GH: Update deployment status
+    
+    Note over Dev,Bind: Verification
+    Dev->>Bind: Query updated DNS records
+    Bind->>Dev: Return new record values
+```
 
 ## Future Enhancements
 
-### Advanced DNS Features
 - DNSSEC support
 - Geographic routing
 - Load balancing integration
-- Traffic management policies
-- Backup DNS records for resiliecny - periodic or on-demaond
-
-### Integration Capabilities
-- Rest API Service to manage the DNS entires
-- Configuration management tools (Ansible)
-- CLI or bash scripting
-- Monitoring systems (Prometheus, Grafana)
-
-
-## Summary
-The system successfully addresses the core requirements:
-- Automated DNS record management
-- CSV input processing
-- Idempotent operations
-- Safe zone management
-- Comprehensive logging and audit
-- Multiple DNS provider support(extensible)
-- CI/CD automation flow
+- REST API service
+- Configuration management tools integration
+- Monitoring systems integration
