@@ -33,6 +33,11 @@ class RecordHandler:
 
         Returns:
             Dictionary containing categorized changes
+
+        raises:
+            ValueError: If current_records is not a list of dictionaries or a dictionary
+            ValueError: If desired_records contains records not in the zone
+
         """
         logger.info("Analyzing DNS record changes...")
 
@@ -167,10 +172,6 @@ class RecordHandler:
             if not self._is_in_zone(record["fqdn"], zone):
                 raise ValueError(f"FQDN '{record['fqdn']}' is not within zone '{zone}'")
 
-        # Log zone boundaries for safety
-        zone_boundaries = self._get_zone_boundaries(zone)
-        logger.info(f"Zone boundaries: {zone_boundaries}")
-
         # Check for any records that might be outside the zone
         for record in current_records:
             if not self._is_in_zone(record["fqdn"], zone):
@@ -179,92 +180,11 @@ class RecordHandler:
                     f"(zone: {zone}) - will not be modified"
                 )
 
-    def _get_zone_boundaries(self, zone: str) -> List[str]:
-        """Get zone boundaries for safety validation."""
-        boundaries = [zone]
-
-        # Add common subdomain patterns for the zone
-        common_subdomains = ["mgmt", "ipmi", "svm", "admin", "monitoring"]
-        for subdomain in common_subdomains:
-            boundaries.append(f"{subdomain}.{zone}")
-
-        return boundaries
-
-    def get_zone_summary(self, zone: str) -> Dict:
-        """Get a summary of the current zone state."""
-        try:
-            current_records = self.dns_client.get_records(zone)
-
-            # Group records by subdomain
-            subdomain_groups = {}
-            for record in current_records:
-                if self._is_in_zone(record["fqdn"], zone):
-                    # Extract subdomain
-                    normalized_record_fqdn = sanitize_fqdn(record["fqdn"])
-                    normalized_zone = sanitize_fqdn(zone)
-
-                    if normalized_record_fqdn == normalized_zone:
-                        subdomain = "root"
-                    else:
-                        subdomain = normalized_record_fqdn.replace(
-                            f".{normalized_zone}", ""
-                        )
-
-                    if subdomain not in subdomain_groups:
-                        subdomain_groups[subdomain] = []
-
-                    subdomain_groups[subdomain].append(record)
-
-            summary = {
-                "zone": zone,
-                "total_records": len(current_records),
-                "zone_records": len(
-                    [r for r in current_records if self._is_in_zone(r["fqdn"], zone)]
-                ),
-                "subdomain_groups": subdomain_groups,
-                "last_updated": self._get_last_updated(current_records),
-            }
-
-            return summary
-
-        except Exception as e:
-            logger.error(f"Failed to get zone summary: {e}")
-            raise
-
     def _get_last_updated(self, records) -> str:
         """Get the last updated timestamp from records (if available)."""
         # This is a placeholder - actual implementation would depend on
         # the DNS provider's ability to provide timestamps
         return "Unknown"
-
-    def validate_csv_structure(self, csv_records: List[Dict]) -> List[str]:
-        """Validate CSV structure and return any validation errors."""
-        errors = []
-
-        for i, record in enumerate(
-            csv_records, start=2
-        ):  # Start at 2 to account for header
-            # Check required fields
-            if "fqdn" not in record or "ipv4" not in record:
-                errors.append(f"Row {i}: Missing required fields")
-                continue
-
-            # Check for empty values
-            if not record["fqdn"].strip() or not record["ipv4"].strip():
-                errors.append(f"Row {i}: Empty FQDN or IPv4 value")
-                continue
-
-            # Check for duplicate FQDNs
-            normalized_fqdn = sanitize_fqdn(record["fqdn"])
-            fqdn_count = sum(
-                1 for r in csv_records if sanitize_fqdn(r["fqdn"]) == normalized_fqdn
-            )
-            if fqdn_count > 1:
-                errors.append(
-                    f"Row {i}: Duplicate FQDN '{record['fqdn']}' found {fqdn_count} times"
-                )
-
-        return errors
 
     def get_change_impact(self, changes: Dict) -> Dict:
         """Analyze the impact of proposed changes."""

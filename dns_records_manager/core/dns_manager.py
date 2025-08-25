@@ -117,6 +117,12 @@ class DNSManager:
             for record in changes["deletes"]:
                 console.print(f"  - {record['fqdn']}")
 
+        if changes.get("no_changes", []):
+            console.print(f"\nTotal no changes: {len(changes['no_changes'])}")
+            console.print("[green]Records with no changes:[/green]")
+            for record in changes["no_changes"]:
+                console.print(f"  = {record['fqdn']}")
+
         console.print("\n")
 
     def _apply_changes(self, changes: Dict, zone: str) -> bool:
