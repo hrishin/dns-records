@@ -87,12 +87,14 @@ run-live: decrypt-key
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
 		python main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com; \
+		PYTHON_EXIT_CODE=$$?; \
 	else \
 		echo "Operation cancelled."; \
-	fi
-
-	@echo "Encrypting update-key.conf after changes..."
-	./scripts/encrypt-update-key.sh;
+		PYTHON_EXIT_CODE=0; \
+	fi; \
+	echo "Encrypting update-key.conf after changes..."; \
+	./scripts/encrypt-update-key.sh; \
+	exit $$PYTHON_EXIT_CODE
 
 clean:
 	@echo "Cleaning up generated files..."

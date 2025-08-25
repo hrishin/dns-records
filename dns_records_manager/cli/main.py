@@ -73,8 +73,8 @@ def main():
 
     try:
         dns_manager = DNSManager(config)
-        records = CSVParser(args.csv).parse()
 
+        records = CSVParser(args.csv).parse()
         success = dns_manager.process_records(
             records,
             args.zone,

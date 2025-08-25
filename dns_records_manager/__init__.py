@@ -10,11 +10,11 @@ __author__ = "DNS Records Manager Team"
 __description__ = "Automated DNS record management for enterprise environments"
 
 from .core.dns_manager import DNSManager
-from .core.record_manager import RecordManager
+from .core.record_manager import RecordHandler
 from .providers.dns_client import DNSClient
 
 __all__ = [
     "DNSManager",
-    "RecordManager",
+    "RecordHandler",
     "DNSClient",
 ]

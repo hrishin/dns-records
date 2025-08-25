@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ..providers.dns_client import DNSClient
-from .record_manager import RecordManager
+from .record_manager import RecordHandler
 
 # Initialize rich console and logger
 console = Console()
@@ -29,7 +29,7 @@ class DNSManager:
         """Initialize the DNS manager with configuration."""
         self.config = config
         self.dns_client = DNSClient(self.config)
-        self.record_manager = RecordManager(self.dns_client)
+        self.record_handler = RecordHandler(self.dns_client)
 
     def process_records(
         self,
@@ -51,7 +51,7 @@ class DNSManager:
             )
 
             # Analyze changes
-            changes = self.record_manager.analyze_changes(
+            changes = self.record_handler.analyze_changes(
                 current_records, records, zone
             )
 
@@ -94,34 +94,30 @@ class DNSManager:
 
     def _display_changes_summary(self, changes: Dict) -> bool:
         """Ask user to confirm changes."""
-        
-        console.print(
-            f"\n[bold]Changes summary:[/bold]"
-        )
-        console.print(
-            f"\n[bold]Total {changes['total_changes']} DNS changes[/bold]"
-        )
+
+        console.print(f"\n[bold]DNS changes summary:[/bold]")
+        console.print(f"\n[bold]Total {changes['total_changes']} DNS changes[/bold]")
 
         # Show detailed changes
         if changes.get("creates", []):
-            console.print(f"Total creates: {len(changes['creates'])}")
-            console.print("\n[bold]Records to create:[/bold]")
+            console.print(f"\nTotal creates: {len(changes['creates'])}")
+            console.print("[green]Records to create:[/green]")
             for record in changes["creates"]:
                 console.print(f"  + {record['fqdn']} -> {record['ipv4']}")
 
         if changes.get("updates", []):
-            console.print(f"Total updates: {len(changes['updates'])}")
-            console.print("\n[yellow]Records to update:[/yellow]")
+            console.print(f"\nTotal updates: {len(changes['updates'])}")
+            console.print("[yellow]Records to update:[/yellow]")
             for record in changes["updates"]:
                 console.print(f"  ~ {record['fqdn']} -> {record['ipv4']}")
 
         if changes.get("deletes", []):
-            console.print(f"Total deletes: {len(changes['deletes'])}")
-            console.print("\n[red]Records to delete:[/red]")
+            console.print(f"\nTotal deletes: {len(changes['deletes'])}")
+            console.print("[red]Records to delete:[/red]")
             for record in changes["deletes"]:
                 console.print(f"  - {record['fqdn']}")
 
-        console.print("")
+        console.print("\n")
 
     def _apply_changes(self, changes: Dict, zone: str) -> bool:
         """Apply DNS changes."""

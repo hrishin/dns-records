@@ -1,5 +1,5 @@
 FQDN,IPv4
-ns1.ib.bigbank.com,192.168.1.100
+ns1.ib.bigbank.com,192.168.1.101
 machine1.mgmt.ib.bigbank.com,172.16.1.50
 machine1.ipmi.ib.bigbank.com,172.16.20.50
 db.ib.bigbank.com,10.33.0.50

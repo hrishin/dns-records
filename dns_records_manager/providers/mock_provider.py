@@ -9,6 +9,7 @@ import logging
 from typing import Dict, List
 
 from .base_provider import DNSProvider
+from ..utils.validators import sanitize_fqdn
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,6 @@ class MockDNSProvider(DNSProvider):
         """Initialize mock provider."""
         self.records = []
         logger.info("Mock DNS provider initialized")
-
-    def _normalize_fqdn(self, fqdn: str) -> str:
-        """Normalize FQDN by removing trailing dot for consistent handling."""
-        return fqdn.rstrip(".") if fqdn else fqdn
 
     def get_records(self, zone: str) -> List[Dict]:
         """Get all DNS records for a zone."""
@@ -38,9 +35,9 @@ class MockDNSProvider(DNSProvider):
 
     def update_record(self, zone: str, record: Dict) -> bool:
         """Update an existing DNS record."""
-        normalized_fqdn = self._normalize_fqdn(record["fqdn"])
+        normalized_fqdn = sanitize_fqdn(record["fqdn"])
         for i, existing in enumerate(self.records):
-            if self._normalize_fqdn(existing["fqdn"]) == normalized_fqdn:
+            if sanitize_fqdn(existing["fqdn"]) == normalized_fqdn:
                 self.records[i] = record.copy()
                 logger.info(
                     f"Mock: Updated record {record['fqdn']} -> {record['ipv4']}"
@@ -51,9 +48,9 @@ class MockDNSProvider(DNSProvider):
 
     def delete_record(self, zone: str, record: Dict) -> bool:
         """Delete a DNS record."""
-        normalized_fqdn = self._normalize_fqdn(record["fqdn"])
+        normalized_fqdn = sanitize_fqdn(record["fqdn"])
         for i, existing in enumerate(self.records):
-            if self._normalize_fqdn(existing["fqdn"]) == normalized_fqdn:
+            if sanitize_fqdn(existing["fqdn"]) == normalized_fqdn:
                 del self.records[i]
                 logger.info(f"Mock: Deleted record {record['fqdn']}")
                 return True

@@ -2,11 +2,9 @@ import csv
 import logging
 from typing import Dict, List
 
-from rich.console import Console
-
 from ..utils.validators import validate_fqdn, validate_ipv4
 
-console = Console()
+logger = logging.getLogger(__name__)
 
 
 class CSVParser:
@@ -30,22 +28,20 @@ class CSVParser:
 
                     # Validate FQDN and IPv4
                     if not validate_fqdn(fqdn):
-                        console.print(
-                            f"[yellow]Warning: Invalid FQDN '{fqdn}' at row {row_num}, skipping[/yellow]"
+                        logger.warning(
+                            f"Invalid FQDN '{fqdn}' at row {row_num}, skipping"
                         )
                         continue
 
                     if not validate_ipv4(ipv4):
-                        console.print(
-                            f"[yellow]Warning: Invalid IPv4 '{ipv4}' at row {row_num}, skipping[/yellow]"
+                        logger.warning(
+                            f"Invalid IPv4 '{ipv4}' at row {row_num}, skipping"
                         )
                         continue
 
                     records.append({"fqdn": fqdn, "ipv4": ipv4, "type": "A"})
 
-            console.print(
-                f"[green]Successfully parsed {len(records)} records from CSV[/green]"
-            )
+            logger.info(f"Successfully parsed {len(records)} records from CSV")
 
         except FileNotFoundError:
             raise FileNotFoundError(f"CSV file not found: {self.csv_path}")

@@ -8,10 +8,12 @@ ensuring idempotent operations and safe zone management.
 import logging
 from typing import Dict, List, Set
 
+from ..utils.validators import sanitize_fqdn
+
 logger = logging.getLogger(__name__)
 
 
-class RecordManager:
+class RecordHandler:
     """Manages DNS record operations and change analysis."""
 
     def __init__(self, dns_client):
@@ -121,15 +123,9 @@ class RecordManager:
             records_list.append({"fqdn": fqdn, "ipv4": ip})
         return records_list
 
-    def _normalize_fqdn(self, fqdn: str) -> str:
-        """Normalize FQDN by removing trailing dot for consistent comparison."""
-        return fqdn.rstrip(".") if fqdn else fqdn
-
     def _records_to_set(self, records: List[Dict]) -> Set[tuple]:
         """Convert list of records to set of (fqdn, ipv4) tuples for efficient comparison."""
-        return {
-            (self._normalize_fqdn(record["fqdn"]), record["ipv4"]) for record in records
-        }
+        return {(sanitize_fqdn(record["fqdn"]), record["ipv4"]) for record in records}
 
     def _find_existing_record(self, current_records, fqdn: str) -> Dict:
         """Find an existing record by FQDN."""
@@ -137,24 +133,24 @@ class RecordManager:
         if isinstance(current_records, dict):
             current_records = self._dict_to_records_list(current_records)
 
-        normalized_fqdn = self._normalize_fqdn(fqdn)
+        normalized_fqdn = sanitize_fqdn(fqdn)
         for record in current_records:
-            if self._normalize_fqdn(record["fqdn"]) == normalized_fqdn:
+            if sanitize_fqdn(record["fqdn"]) == normalized_fqdn:
                 return record
         return None
 
     def _fqdn_in_desired(self, fqdn: str, desired_records: List[Dict]) -> bool:
         """Check if an FQDN exists in desired records."""
-        normalized_fqdn = self._normalize_fqdn(fqdn)
+        normalized_fqdn = sanitize_fqdn(fqdn)
         return any(
-            self._normalize_fqdn(record["fqdn"]) == normalized_fqdn
+            sanitize_fqdn(record["fqdn"]) == normalized_fqdn
             for record in desired_records
         )
 
     def _is_in_zone(self, fqdn: str, zone: str) -> bool:
         """Check if an FQDN is within the specified zone."""
-        normalized_fqdn = self._normalize_fqdn(fqdn)
-        normalized_zone = self._normalize_fqdn(zone)
+        normalized_fqdn = sanitize_fqdn(fqdn)
+        normalized_zone = sanitize_fqdn(zone)
         return (
             normalized_fqdn.endswith(normalized_zone)
             or normalized_fqdn == normalized_zone
@@ -204,8 +200,8 @@ class RecordManager:
             for record in current_records:
                 if self._is_in_zone(record["fqdn"], zone):
                     # Extract subdomain
-                    normalized_record_fqdn = self._normalize_fqdn(record["fqdn"])
-                    normalized_zone = self._normalize_fqdn(zone)
+                    normalized_record_fqdn = sanitize_fqdn(record["fqdn"])
+                    normalized_zone = sanitize_fqdn(zone)
 
                     if normalized_record_fqdn == normalized_zone:
                         subdomain = "root"
@@ -259,11 +255,9 @@ class RecordManager:
                 continue
 
             # Check for duplicate FQDNs
-            normalized_fqdn = self._normalize_fqdn(record["fqdn"])
+            normalized_fqdn = sanitize_fqdn(record["fqdn"])
             fqdn_count = sum(
-                1
-                for r in csv_records
-                if self._normalize_fqdn(r["fqdn"]) == normalized_fqdn
+                1 for r in csv_records if sanitize_fqdn(r["fqdn"]) == normalized_fqdn
             )
             if fqdn_count > 1:
                 errors.append(
