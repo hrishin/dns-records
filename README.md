@@ -27,6 +27,8 @@ A comprehensive, enterprise-grade automation solution for managing DNS records i
 - Python 3.8+
 - SOPS: `brew install sops`
 - Age: `brew install age`
+- GNU Make
+- Docker/Podman (for running the BIND DNS server container locally)
 
 ### Installation
 
@@ -51,11 +53,11 @@ python main.py --csv input.csv --zone ib.bigbank.com
 python main.py --csv input.csv --zone ib.bigbank.com --dry-run
 
 # Install and use as command
-pip install -e .
+make install-package
 dns-manager --csv input.csv --zone ib.bigbank.com
 ```
 
-## Input Format
+## Input CSV Format
 
 The system accepts a CSV file with FQDN and IPv4 columns:
 
