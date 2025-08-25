@@ -1,3 +1,9 @@
+# Variables for virtual environment
+VENV_NAME = venv
+PYTHON = python3
+PIP = $(VENV_NAME)/bin/pip
+PYTHON_VENV = $(VENV_NAME)/bin/python
+
 .PHONY: help install build install-package install-dev test test-integration test-clean clean clean-all clean-logs setup-dev check-deps uninstall bind-setup bind-rebuild bind-start bind-stop bind-status bind-logs bind-test bind-clean decrypt-key encrypt-key lint format demo-dry-run demo-live run-dry-run run-live
 
 # Default target
@@ -44,56 +50,55 @@ help:
 
 install:
 	@echo "Installing dependencies..."
-	@if [ ! -d "venv" ]; then \
-		python3 -m venv venv; \
+	@if [ ! -d "$(VENV_NAME)" ]; then \
+		$(PYTHON) -m venv $(VENV_NAME); \
 	fi
-	. venv/bin/activate
-	pip install -r requirements.txt
+	$(PIP) install -r requirements.txt
 	@echo "Installation complete!"
 
 build:
 	@echo "Building package..."
-	python setup.py build
+	$(PYTHON_VENV) setup.py build
 	@echo "Package built successfully!"
 
 install-package: build
 	@echo "Installing package in development mode..."
-	pip install -e .
+	$(PIP) install -e .
 	@echo "Package installed in development mode!"
 
 install-dev: install install-package
 	@echo "Installing development dependencies..."
-	pip install pytest pytest-cov black flake8 mypy
+	$(PIP) install pytest pytest-cov black flake8 mypy
 	@echo "Development dependencies installed!"
 
 lint:
 	@echo "Running linting checks..."
-	flake8 *.py dns_records_manager/
+	$(PYTHON_VENV) -m flake8 *.py dns_records_manager/
 	@echo "Linting complete!"
 
 format:
 	@echo "Formatting code..."
-	black *.py dns_records_manager/
+	$(PYTHON_VENV) -m black *.py dns_records_manager/
 	@echo "Code formatting complete!"
 
 demo-dry-run:
 	@echo "Running DNS manager in dry-run mode..."
-	python main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com --dry-run
+	$(PYTHON_VENV) main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com --dry-run
 
 demo-live:
 	@echo "Running DNS manager in live mode..."
-	python main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com
+	$(PYTHON_VENV) main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com
 
 run-dry-run:
 	@echo "Running DNS manager in dry-run mode..."
-	python main.py --csv input.csv --config configs/config_bind.yaml --zone ib.bigbank.com --dry-run
+	$(PYTHON_VENV) main.py --csv input.csv --config configs/config_bind.yaml --zone ib.bigbank.com --dry-run
 
 run-live: decrypt-key
 	@echo "Running DNS manager in live mode..."
 	@echo "WARNING: This will make actual DNS changes!"
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
-		python main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com; \
+		$(PYTHON_VENV) main.py --csv input.csv  --config configs/config_bind.yaml --zone ib.bigbank.com; \
 		PYTHON_EXIT_CODE=$$?; \
 	else \
 		echo "Operation cancelled."; \
@@ -131,11 +136,11 @@ setup-dev: install-dev
 
 check-deps:
 	@echo "Checking dependency versions..."
-	pip list | grep -E "(boto3|PyYAML|click|dnspython|rich)"
+	$(PIP) list | grep -E "(boto3|PyYAML|click|dnspython|rich)"
 
 uninstall:
 	@echo "Uninstalling package..."
-	pip uninstall dns-records-manager -y
+	$(PIP) uninstall dns-records-manager -y
 	@echo "Package uninstalled!"
 
 # BIND DNS Server Management

@@ -37,6 +37,7 @@ A comprehensive, enterprise-grade automation solution for managing DNS records i
 git clone <repository-url>
 cd dns-records-manager
 make install
+. venv/bin/activate
 
 # Configure
 cp configs/config.example.yaml configs/config.yaml

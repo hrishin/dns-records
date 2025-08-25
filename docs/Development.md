@@ -24,6 +24,7 @@ cd dns-records-manager
 
 # Install dependencies
 make install
+. venv/bin/activate
 ```
 
 ### 2. Development Environment Configuration
