@@ -122,6 +122,9 @@ jobs:
         echo "Nameserver: 44.216.94.190"
         echo "Configuration: BIND Provider"
         
+        # Create output directory
+        mkdir -p deploy-output
+        
         # Run the actual deployment (not dry-run)
         if python -m dns_records_manager.cli.main \
           --config configs/config_bind_deploy.yaml \
@@ -130,17 +133,10 @@ jobs:
           --verbose; then
           echo "status=success" >> $GITHUB_OUTPUT
           echo "DNS deployment completed successfully"
-        else
-          echo "status=failed" >> $GITHUB_OUTPUT
-          echo "DNS deployment failed"
-          exit 1
-        fi
-
-        make encrypt-key
-        
-        if [ $? -eq 0 ]; then
-            echo "Creating deployment summary..."
-            {
+          
+          # Create deployment summary
+          echo "Creating deployment summary..."
+          {
             echo "DNS Records Manager Deployment Summary"
             echo "====================================="
             echo "Zone: ib.bigbank.com"
@@ -152,15 +148,43 @@ jobs:
             echo "Branch: ${{ github.ref_name }}"
             echo ""
             echo "Deployment completed successfully."
-            } > deploy-output/deployment-summary.txt
-            
-            # Show summary in GitHub Actions
-            echo "::group::Deployment Summary"
-            cat deploy-output/deployment-summary.txt
-            echo "::endgroup::"
+          } > deploy-output/deployment-summary.txt
+          
+          # Show summary in GitHub Actions
+          echo "::group::Deployment Summary"
+          cat deploy-output/deployment-summary.txt
+          echo "::endgroup::"
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "DNS deployment failed"
+          
+          # Create failure summary
+          echo "Creating failure summary..."
+          {
+            echo "DNS Records Manager Deployment Summary"
+            echo "====================================="
+            echo "Zone: ib.bigbank.com"
+            echo "Nameserver: 44.216.94.190"
+            echo "Configuration: BIND Provider"
+            echo "Status: FAILED"
+            echo "Timestamp: $(date -u)"
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo ""
+            echo "Deployment failed. Check logs for details."
+          } > deploy-output/deployment-summary.txt
+          
+          # Show failure summary
+          echo "::group::Deployment Summary"
+          cat deploy-output/deployment-summary.txt
+          echo "::endgroup::"
+          
+          exit 1
         fi
 
+        make encrypt-key
         rm -rf .age-key
+
 
     - name: Upload deployment artifacts
       uses: actions/upload-artifact@v4

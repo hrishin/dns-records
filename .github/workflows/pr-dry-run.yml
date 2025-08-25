@@ -96,6 +96,7 @@ jobs:
           --verbose
 
         make encrypt-key
+        rm -rf .age-key
 
         if [ $? -eq 0 ]; then
           echo "status=success" >> $GITHUB_OUTPUT
