@@ -63,9 +63,7 @@ install-dev: install install-package
 	pip install pytest pytest-cov black flake8 mypy
 	@echo "Development dependencies installed!"
 
-test:
-	@echo "Running tests..."
-	python -m pytest main.py -v
+test: test-unit test-integration
 
 lint:
 	@echo "Running linting checks..."
@@ -214,6 +212,41 @@ decrypt-key:
 encrypt-key:
 	@echo "Encrypting update-key.conf after changes..."
 	./scripts/encrypt-update-key.sh
+
+# Test targets
+.PHONY: test test-integration test-clean
+
+# Run all tests
+test: test-integration
+
+# Run integration tests with behave
+test-integration: decrypt-key
+	@echo "Running integration tests with behave..."
+	scripts/run-integration-tests.sh
+	SCRIPT_EXIT_CODE=$$?; \
+	echo "Encrypting update-key.conf after changes..."; \
+	./scripts/encrypt-update-key.sh; \
+	exit $$SCRIPT_EXIT_CODE
+
+# Clean test artifacts
+test-clean:
+	@echo "Cleaning test artifacts..."
+	rm -rf test_data/
+	rm -rf test_reports/
+	rm -rf htmlcov/
+	rm -rf .coverage
+	rm -f test_dns_manager.log
+
+# Install test dependencies
+test-deps:
+	@echo "Installing test dependencies..."
+	pip install -r requirements.txt
+
+# Run tests with coverage report
+test-coverage: test
+	@echo "Generating coverage report..."
+	coverage html
+	@echo "Coverage report generated in htmlcov/"
 
 # Default help
 .DEFAULT_GOAL := help
