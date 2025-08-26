@@ -1,13 +1,15 @@
-$ORIGIN .
-$TTL 86400	; 1 day
-test.bigbank.com		IN SOA	ns1.test.bigbank.com. admin.test.bigbank.com. (
-				2023120125 ; serial
+$ORIGIN test.bigbank.com.
+$TTL 3600	; 1 hour
+@		IN SOA	ns1.test.bigbank.com. admin.test.bigbank.com. (
+				2024120101 ; serial (YYYYMMDDNN)
 				3600       ; refresh (1 hour)
 				1800       ; retry (30 minutes)
 				1209600    ; expire (2 weeks)
-				86400      ; minimum (1 day)
+				300        ; minimum (5 minutes)
 				)
-			NS	ns1.test.bigbank.com.
 
-$ORIGIN test.bigbank.com.
-ns1			A	192.168.1.110
+; Nameservers
+		IN NS	ns1.test.bigbank.com.
+
+; A Records
+ns1		IN A	192.168.1.110
