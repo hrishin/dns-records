@@ -128,7 +128,7 @@ class RecordHandler:
         for record in current_records:
             if sanitize_fqdn(record["fqdn"]) == normalized_fqdn:
                 return record
-        return None
+        return {}
 
     def _fqdn_in_desired(self, fqdn: str, desired_records: List[Dict]) -> bool:
         """Check if an FQDN exists in desired records."""

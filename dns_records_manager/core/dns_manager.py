@@ -218,6 +218,3 @@ class DNSManager:
                 f"[red]Warning: Failed to save dry run output to {output_file}: {e}[/red]"
             )
 
-
-if __name__ == "__main__":
-    main()
