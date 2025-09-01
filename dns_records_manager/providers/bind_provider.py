@@ -36,7 +36,20 @@ class BINDProvider(DNSProvider):
         self.zone_file = config.get("zone_file", "")
 
         self._initialize_dns_resolver()
+        self._setup_keys()
 
+        logger.info(
+            f"BIND provider initialized for nameserver {self.nameserver}:{self.port}"
+        )
+
+    def _initialize_dns_resolver(self) -> None:
+        """Initialize and configure the DNS resolver with nameserver and port settings."""
+        resolver = dns.resolver.Resolver()
+        resolver.nameservers = [self.nameserver]
+        resolver.port = self.port
+        self.resolver = resolver
+
+    def _setup_keys(self) -> None:
         self.keyring = None
         if self.key_file and self.key_name:
             try:
@@ -55,17 +68,6 @@ class BINDProvider(DNSProvider):
             except Exception as e:
                 logger.warning(f"Failed to load TSIG key: {e}")
                 logger.debug("TSIG authentication will not be available")
-
-        logger.info(
-            f"BIND provider initialized for nameserver {self.nameserver}:{self.port}"
-        )
-
-    def _initialize_dns_resolver(self) -> None:
-        """Initialize and configure the DNS resolver with nameserver and port settings."""
-        resolver = dns.resolver.Resolver()
-        resolver.nameservers = [self.nameserver]
-        resolver.port = self.port
-        self.resolver = resolver
 
     def _parse_bind_key_file(self, key_content: str, key_name: str) -> Optional[str]:
         """Parse BIND key file format to extract the secret for a specific key."""

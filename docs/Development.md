@@ -186,6 +186,7 @@ creation_rules:
 make decrypt-key
 
 # Edit the decrypted file
+tsig-keygen -a hmac-sha256 update-key > bind/update-key.conf
 vim bind/update-key.conf
 ```
 
