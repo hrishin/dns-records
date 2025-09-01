@@ -122,9 +122,9 @@ clean:
 	rm -f *.log
 	rm -f demo_config.yaml
 	rm -f demo_records.csv
-	rm -f build/
-	rm -f dist/
-	rm -f *.egg-info/
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
 	@echo "Cleanup complete!"
 
 clean-all: clean bind-clean encrypt-key
