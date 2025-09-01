@@ -46,14 +46,6 @@ Edit `configs/config.yaml` with your local default settings:
 ```yaml
 dns_providers:
   mock:
-  
-  bind:
-    nameserver: "127.0.0.1"
-    port: 53
-    key_file: "/etc/bind/rndc.key"
-    key_name: "rndc-key"
-    zone_file: "/etc/bind/zones/ib.bigbank.com.zone"
-
 default_provider: mock  # Use mock for local development
 logging:
   level: DEBUG

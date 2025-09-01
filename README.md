@@ -118,7 +118,7 @@ python main.py --csv input.csv --zone ib.bigbank.com --dry-run
 ```
 
 ### 4. Apply Changes
-Execute the updates commite the change to your branch,
+Execute the updates commit the change to your branch,
 raise the the pull requests.
 
 #### Committing and Pushing Changes
@@ -198,7 +198,7 @@ logging:
 - `--verbose, -v`: Enable verbose logging
 - `--output-file`: Save dry-run output to file
 
-## Developmand and Local demo
+## Local demo
 
 For detailed local development, testing, and advanced usage instructions, see the [Development Guide](docs/Development.md).
 

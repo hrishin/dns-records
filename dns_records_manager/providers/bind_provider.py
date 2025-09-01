@@ -118,14 +118,29 @@ class BINDProvider(DNSProvider):
         return records
 
     def _get_zone_transfer_records(self, zone: str) -> List[Dict]:
-        """Get A records from zone transfer and return them as a list of record dictionaries."""
+        """Get A records from zone transfer or zone file and return them as a list of record dictionaries."""
         records = []
         zone_obj = self._zone_transfer(zone)
-        if zone_obj:
+        
+        # If zone transfer fails and zone file is configured, try loading from file
+        if not zone_obj and self.zone_file:
+            try:
+                logger.info(f"Zone transfer failed, attempting to load from zone file: {self.zone_file}")
+                zone_obj = dns.zone.from_file(self.zone_file, zone, relativize=False)
+                logger.info("Successfully loaded zone from file")
+            except Exception as e:
+                logger.warning(f"Failed to load zone from file {self.zone_file}: {e}")
+                return records
+
+        if zone_obj and zone_obj.origin:
             for name, node in zone_obj.nodes.items():
                 for rdataset in node.rdatasets:
                     if rdataset.rdtype == dns.rdatatype.A:
-                        fqdn = str(name.derelativize(zone_obj.origin))
+                        # Handle both relative and absolute names
+                        if name == '@':
+                            fqdn = str(zone_obj.origin)
+                        else:
+                            fqdn = str(name) if name.is_absolute() else f"{name}.{zone_obj.origin}"
                         normalized_fqdn = sanitize_fqdn(fqdn)
                         for rdata in rdataset:
                             records.append(

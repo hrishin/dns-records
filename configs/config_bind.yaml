@@ -1,14 +1,12 @@
 # BIND DNS Provider Configuration
 
-# This configuration uses the BIND provider with to  connect to the BIND DNS server locally
-
 dns_providers:
   bind:
     nameserver: 127.0.0.1
     port: 53
     key_file: bind/update-key.conf
     key_name: update-key
-    # zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Uncomment if using zone files
+    # zone_file: /etc/bind/zones/ib.bigbank.com.zone  # Uncomment if using zone files, as a fallback if zone transfer fails
 
 default_provider: bind
 
