@@ -112,6 +112,14 @@ run-live: decrypt-key
 	./scripts/encrypt-update-key.sh; \
 	exit $$PYTHON_EXIT_CODE
 
+dryrun-stage: decrypt-key
+	@echo "Running DNS manager with the mode..."
+	$(PYTHON_VENV) main.py --csv input.csv --config configs/config_stage.yaml --zone ib.bigbank.com --dry-run
+	PYTHON_EXIT_CODE=$$?;
+	echo "Encrypting update-key.conf after changes..."; \
+	./scripts/encrypt-update-key.sh; \
+	exit $$PYTHON_EXIT_CODE
+
 clean:
 	@echo "Cleaning up generated files..."
 	rm -rf __pycache__/

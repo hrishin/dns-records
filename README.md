@@ -114,7 +114,7 @@ up3.ib.bigbank.com,192.168.1.102
 Run a dry-run to preview what will be updated:
 
 ```bash
-python main.py --csv input.csv --zone ib.bigbank.com --dry-run
+make dryrun-stage
 ```
 
 ### 4. Apply Changes
