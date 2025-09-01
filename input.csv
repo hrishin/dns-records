@@ -13,4 +13,3 @@ db1.ib.bigbank.com,10.33.2.10
 monitoring.ib.bigbank.com,10.33.3.10
 logging.ib.bigbank.com,10.33.3.11
 api.ib.bigbank.com,10.33.3.12
-kubeadm.ib.bigbank.com,10.33.3.19
