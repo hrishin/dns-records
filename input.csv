@@ -9,7 +9,7 @@ machine2.ipmi.ib.bigbank.com,172.16.20.51
 machine2.ib.bigbank.com,10.33.0.51
 web1.ib.bigbank.com,10.33.1.10
 web2.ib.bigbank.com,10.33.1.11
-db1.ib.bigbank.com,10.33.2.10
+db1.ib.bigbank.com,10.33.2.100
 monitoring.ib.bigbank.com,10.33.3.10
 logging.ib.bigbank.com,10.33.3.11
-api.ib.bigbank.com,10.33.3.12
+api2.ib.bigbank.com,10.33.3.12
