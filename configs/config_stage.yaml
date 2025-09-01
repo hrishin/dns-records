@@ -1,0 +1,10 @@
+# DNS Provider Configuration for stage environment
+
+dns_providers:
+  bind:
+    nameserver: 44.216.94.190
+    port: 53
+    key_file: bind/update-key.conf
+    key_name: update-key
+
+default_provider: bind
