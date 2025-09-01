@@ -89,9 +89,13 @@ demo-live:
 	@echo "Running DNS manager in live mode..."
 	$(PYTHON_VENV) main.py --csv input.csv --config configs/config.yaml --zone ib.bigbank.com
 
-run-dry-run:
+run-dry-run: decrypt-key
 	@echo "Running DNS manager in dry-run mode..."
 	$(PYTHON_VENV) main.py --csv input.csv --config configs/config_bind.yaml --zone ib.bigbank.com --dry-run
+	PYTHON_EXIT_CODE=$$?;
+	echo "Encrypting update-key.conf after changes..."; \
+	./scripts/encrypt-update-key.sh; \
+	exit $$PYTHON_EXIT_CODE
 
 run-live: decrypt-key
 	@echo "Running DNS manager in live mode..."
